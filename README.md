@@ -13,7 +13,7 @@ This beta plans coverage, tracks the day-of board (late / no-show / call-out), a
 
 ## How to try it
 
-The clickable app is the live preview in Grok (dark green board titled Barnboard) and the Netlify site linked from this repo.
+Open this Grok chat’s **live preview** — the dark green board titled Barnboard. You do not need to install anything.
 
 1. Tap **Tue 15**
 2. Tap **Approve plan**
@@ -21,3 +21,7 @@ The clickable app is the live preview in Grok (dark green board titled Barnboard
 4. Tap **Load my calendar** to pull this week from Appointments
 
 Demo week stays available if the calendar cannot load.
+
+## Repo
+
+Private source for the Barnboard beta. The clickable app is the Grok preview (and any site linked from this repo).
