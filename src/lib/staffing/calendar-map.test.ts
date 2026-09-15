@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  barnKey,
   displayTitle,
   extractCalendars,
   isSurgeryTitle,
@@ -148,7 +149,7 @@ describe("mapPracticeEvents", () => {
     const mapped = mapPracticeEvents([
       {
         event_id: "flamingo",
-        summary: "Weinwurm PPE- Kalika",
+        summary: "Newclient- Splash lameness",
         colorId: "4",
         start_time: "2026-09-15T14:00:00-04:00",
         end_time: "2026-09-15T17:00:00-04:00",
@@ -169,7 +170,7 @@ describe("mapPracticeEvents", () => {
       },
       {
         event_id: "nocolor",
-        summary: "Steele-lil bit vax and coggins",
+        summary: "Mystery- Horse recheck",
         start_time: "2026-09-15T13:30:00-04:00",
         end_time: "2026-09-15T14:30:00-04:00",
       },
@@ -209,5 +210,59 @@ describe("mapPracticeEvents", () => {
     assert.equal(byId.tech, undefined);
     assert.equal(byId.mine?.vetId, "alejandro");
     assert.equal(byId.mine?.service, "tech");
+  });
+
+  it("auto-tags from AA, bring meds, barn names, and does not treat notes as surgery", () => {
+    const mapped = mapPracticeEvents([
+      {
+        event_id: "aa",
+        summary: "AA Rizvi- Hansel Osphos",
+        start_time: "2026-09-16T14:00:00-04:00",
+        end_time: "2026-09-16T15:00:00-04:00",
+      },
+      {
+        event_id: "bring",
+        summary: "Bring meds Malnik- Charlie shockwave and laser",
+        start_time: "2026-09-15T11:00:00-04:00",
+        end_time: "2026-09-15T12:00:00-04:00",
+      },
+      {
+        event_id: "renier",
+        summary: "Renier-Kensington recheck/flex",
+        start_time: "2026-09-15T08:00:00-04:00",
+        end_time: "2026-09-15T09:00:00-04:00",
+      },
+      {
+        event_id: "dooley",
+        summary: "Ferrier- Clint (Gilday) recheck cellulitis",
+        start_time: "2026-09-15T16:45:00-04:00",
+        end_time: "2026-09-15T17:45:00-04:00",
+      },
+      {
+        event_id: "wilberg",
+        summary: "Wilberg- Hannah Montana lameness",
+        description: "Provider: SC\nMEDICAL NOTES\nShe's potentially interested in surgery. kissing spine.",
+        start_time: "2026-09-15T09:30:00-04:00",
+        end_time: "2026-09-15T13:30:00-04:00",
+      },
+      {
+        event_id: "call",
+        summary: "Call Jacob, check WhatsApp video",
+        start_time: "2026-09-14T18:00:00-04:00",
+        end_time: "2026-09-14T18:30:00-04:00",
+      },
+    ]);
+    const byId = Object.fromEntries(mapped.appointments.map((a) => [a.id, a]));
+    assert.equal(byId.aa?.vetId, "alejandro");
+    assert.equal(byId.bring?.vetId, "alejandro");
+    assert.equal(byId.renier?.vetId, "weston");
+    assert.equal(byId.dooley?.vetId, "michaela");
+    assert.equal(byId.wilberg?.vetId, "sidney");
+    assert.equal(byId.wilberg?.service, "field");
+    assert.equal(byId.call, undefined);
+    assert.equal(isSurgeryTitle("Wilberg- Hannah Montana lameness"), false);
+    assert.equal(barnKey("✔️Steele-lil bit vax and coggins"), "steele|lil");
+    assert.equal(barnKey("Steele- Shrek and Fiona vaccines"), "steele|shrek");
+    assert.equal(barnKey("Ferrier/Gilday- Clint recheck"), "ferrier|clint");
   });
 });

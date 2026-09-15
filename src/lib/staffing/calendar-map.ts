@@ -104,25 +104,32 @@ function stripHtml(value: string): string {
 }
 
 function firstProvider(blob: string): CoverId | "unknown" {
-  const match = blob.match(/provider:\s*(wd|sc|md)\b/i);
-  if (!match) return "unknown";
-  const code = match[1].toUpperCase();
-  if (code === "WD") return "weston";
-  if (code === "SC") return "sidney";
-  return "michaela";
+  const re =
+    /provider:\s*(wd|sc|md|dr\.?\s*davis|dr\.?\s*chanutin|dr\.?\s*doole(?:y)?|weston|sidney|michaela|alejandro|alej)\b/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(blob))) {
+    const v = m[1].toLowerCase();
+    if (v === "wd" || v.includes("davis") || v === "weston") return "weston";
+    if (v === "sc" || v.includes("chanutin") || v === "sidney") return "sidney";
+    if (v === "md" || v.includes("doole") || v === "michaela") return "michaela";
+    if (v.includes("alej")) return "alejandro";
+  }
+  return "unknown";
 }
 
-/** Practice legend: Peacock = Davis, Flamingo = Chanutin, Wisteria = Dooley, Tomato = surgery/Davis. */
-const COLOR_VET: Record<string, VetId> = {
+/** Practice legend: Peacock = Davis, Flamingo = Chanutin, Wisteria = Dooley, Tomato = surgery/Davis, Banana = Alejandro. */
+const COLOR_VET: Record<string, CoverId> = {
   "1": "michaela",
   "3": "michaela",
   "4": "sidney",
+  "5": "alejandro",
   "7": "weston",
   "11": "weston",
   lavender: "michaela",
   grape: "michaela",
   wisteria: "michaela",
   flamingo: "sidney",
+  banana: "alejandro",
   peacock: "weston",
   tomato: "weston",
 };
@@ -131,7 +138,7 @@ function eventColor(e: RawCalendarEvent): string {
   return asText(e.colorId) || asText(e.color_id) || asText(e.color) || asText(e.colorLabel);
 }
 
-function vetFromColor(color: string): VetId | "unknown" {
+function vetFromColor(color: string): CoverId | "unknown" {
   const key = color.trim().toLowerCase();
   return COLOR_VET[key] ?? "unknown";
 }
@@ -141,18 +148,61 @@ function colorName(color: string): string {
     "1": "Lavender",
     "3": "Wisteria",
     "4": "Flamingo",
+    "5": "Banana",
     "7": "Peacock",
     "11": "Tomato",
   };
   return names[color] ?? color;
 }
 
-export function isSurgeryTitle(title: string, description = ""): boolean {
-  const blob = `${title} ${description}`;
-  if (/sx\s+consult|\bconsults?\b/i.test(title) && !/\bstanding sx\b|kissing spine|arthroscopy/i.test(blob)) {
+export function isSurgeryTitle(title: string, _description = ""): boolean {
+  if (/sx\s+consult|\bconsults?\b/i.test(title) && !/\bstanding sx\b|kissing spine|arthroscopy/i.test(title)) {
     return false;
   }
-  return /\bstanding sx\b|\barthroscopy\b|kissing spine|\bsurgery\b|\bsx\b/i.test(blob);
+  return /\bstanding sx\b|\barthroscopy\b|kissing spine|\bsurgery\b|\bsx\b/i.test(title);
+}
+
+/**
+ * Barn + horse from a title like "Freund- Cindy carpus" → "freund|cindy".
+ * Used to remember who covers a stop after you tap it once.
+ */
+export function barnKey(title: string): string {
+  let t = displayTitle(title).toLowerCase();
+  t = t.replace(/^(bring meds|aa|alej|alejandro)\s+/i, "");
+  t = t.replace(/\//g, " ").replace(/\s+/g, " ").trim();
+  const m = t.match(/^(.+?)\s*[-–—]\s*(.+)$/);
+  const token = (s: string) => (s.match(/[a-z0-9]+/) ?? [""])[0] ?? "";
+  if (!m) return token(t);
+  const barn = token(m[1] ?? "");
+  const horse = token(m[2] ?? "");
+  if (barn && horse) return `${barn}|${horse}`;
+  return barn || horse;
+}
+
+/** Barns learned from the color-coded Appointments calendar (Peacock/Flamingo/Wisteria/Banana). */
+export const DEFAULT_BARN_COVER: Record<string, CoverId> = {
+  "renier|kensington": "weston",
+  "weinwurm|kalika": "weston",
+  "gore|gally": "weston",
+  "steele|lil": "weston",
+  "freund|cindy": "sidney",
+  "steele|shrek": "sidney",
+  "ferrier|clint": "michaela",
+  "rading|chammie": "alejandro",
+  "malnik|charlie": "alejandro",
+};
+
+export function applyBarnCover(
+  appointments: Appointment[],
+  memory: Record<string, CoverId>,
+): Appointment[] {
+  if (!memory || !Object.keys(memory).length) return appointments;
+  return appointments.map((a) => {
+    if (a.vetId !== "unknown" || a.vetCustom) return a;
+    const hit = memory[barnKey(a.title)];
+    if (!hit) return a;
+    return { ...a, vetId: hit, colorLabel: hit };
+  });
 }
 
 function detectVet(title: string, description: string, color = ""): CoverId | "unknown" {
@@ -163,6 +213,7 @@ function detectVet(title: string, description: string, color = ""): CoverId | "u
   if (/^sc\b/i.test(title) || /\bsidney\b|\bchanutin\b/i.test(title)) return "sidney";
   if (/^wd\b/i.test(title) || /\bweston\b|\bdavis\b/i.test(title)) return "weston";
   if (/\bkj\/wd\b/i.test(title)) return "weston";
+  if (/\baa\b/i.test(title) && !/teching/i.test(title)) return "alejandro";
   if (
     /\balejandro\b|\balej\b/i.test(title) &&
     !/teching/i.test(title) &&
@@ -170,11 +221,16 @@ function detectVet(title: string, description: string, color = ""): CoverId | "u
   ) {
     return "alejandro";
   }
+  if (/^bring meds\b/i.test(title) || /\badmin bpc\b/i.test(title)) return "alejandro";
+
+  const fromBarn = DEFAULT_BARN_COVER[barnKey(title)];
+  if (fromBarn) return fromBarn;
 
   const fromColor = vetFromColor(color);
   if (fromColor !== "unknown") return fromColor;
 
   if (isSurgeryTitle(title, description)) return "weston";
+  if (/\bppe\b/i.test(title)) return "weston";
   return "unknown";
 }
 
@@ -187,9 +243,10 @@ function detectService(title: string, description: string, vet: CoverId | "unkno
 
 function shouldSkipTitle(title: string): boolean {
   return (
-    /\b(to do|todo|eftps|payment|on call|gate code|card ending|show shift|calls\/paperwork)\b/i.test(
+    /\b(to do|todo|eftps|payment|on call|gate code|card ending|show shift|calls\/paperwork|whatsapp)\b/i.test(
       title,
     ) ||
+    /^(call|text|email)\b/i.test(title) ||
     /\breview .{0,40}schedule\b/i.test(title) ||
     /\bupdate susan\b/i.test(title) ||
     /\bcharge \$/i.test(title) ||

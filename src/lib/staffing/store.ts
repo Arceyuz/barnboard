@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { APPOINTMENTS, DEMO_FOCUS_DATE, DOCTORS, DUTY_TEMPLATES, STAFF, WEEK_DATES } from "./seed";
 import { currentWeekDates, datesForSpan, focusDate, rfcRangeForWeek, shiftAnchor, skipSunday } from "./dates";
-import { PRACTICE_CALENDAR_ID } from "./calendar-map";
+import { PRACTICE_CALENDAR_ID, applyBarnCover, barnKey } from "./calendar-map";
 import {
   fillUsualDay,
   nextSupport,
@@ -55,6 +55,7 @@ type StaffingState = {
   calendarMessage: string;
   loginUrl?: string;
   skipped: number;
+  barnCover: Record<string, CoverId>;
   plans: Record<string, DayPlan>;
   setHydrated: () => void;
   setDate: (date: string) => void;
@@ -168,6 +169,7 @@ function seedState(): Pick<
   | "skipped"
   | "calendarStatus"
   | "calendarMessage"
+  | "barnCover"
 > {
   const staff = STAFF.map((p) => ({ ...p }));
   const doctors = DOCTORS.map((d) => ({ ...d }));
@@ -189,6 +191,7 @@ function seedState(): Pick<
     skipped: 0,
     calendarStatus: "idle",
     calendarMessage: "",
+    barnCover: {},
     plans: buildPlans(WEEK_DATES, APPOINTMENTS, [], {}, { staff, doctors, duties }),
   };
 }
@@ -435,6 +438,10 @@ export const useStaffing = create<StaffingState>()(
         set({ plans: { ...get().plans, [d]: reassignSecondary(plan, vetId, pick, get().ctxFor(d)) } });
       },
       tagAppointment: (id, vetId) => {
+        const current = get().appointments.find((a) => a.id === id);
+        const key = current ? barnKey(current.title) : "";
+        const barnCover =
+          key && vetId !== "unknown" ? { ...get().barnCover, [key]: vetId } : get().barnCover;
         const appointments = get().appointments.map((a) =>
           a.id === id
             ? {
@@ -446,6 +453,7 @@ export const useStaffing = create<StaffingState>()(
             : a,
         );
         set({
+          barnCover,
           appointments,
           plans: buildPlans(get().weekDates, appointments, get().roster, get().plans, {
             staff: get().staff,
@@ -557,10 +565,11 @@ export const useStaffing = create<StaffingState>()(
           }
           return next;
         });
-        const incomingIds = new Set(incoming.map((a) => a.id));
+        const remembered = applyBarnCover(incoming, get().barnCover);
+        const incomingIds = new Set(remembered.map((a) => a.id));
         const appointments = [
           ...prior.filter((p) => !incomingIds.has(p.id) && !visible.has(p.date)),
-          ...incoming,
+          ...remembered,
         ];
         const plans = buildPlans(weekDates, appointments, payload.roster, previous, {
           staff: get().staff,
@@ -597,7 +606,8 @@ export const useStaffing = create<StaffingState>()(
         });
       },
       setCalendarUi: (patch) => set(patch),
-      resetDemo: () => set({ ...seedState(), calendars: get().calendars, me: get().me }),
+      resetDemo: () =>
+        set({ ...seedState(), calendars: get().calendars, me: get().me, barnCover: get().barnCover }),
     }),
     {
       name: "barnboard-v8",
@@ -617,6 +627,7 @@ export const useStaffing = create<StaffingState>()(
         calendarId: s.calendarId,
         calendarName: s.calendarName,
         skipped: s.skipped,
+        barnCover: s.barnCover,
         plans: s.plans,
       }),
     },
