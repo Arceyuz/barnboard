@@ -68,6 +68,7 @@ export type Appointment = {
   custom?: boolean;
   kit?: Kit;
   kitCustom?: boolean;
+  vetCustom?: boolean;
 };
 
 export type Assignment = {

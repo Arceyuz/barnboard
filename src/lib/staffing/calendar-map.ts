@@ -16,6 +16,10 @@ export type RawCalendarEvent = {
   end?: string | { dateTime?: string; date?: string };
   all_day?: boolean;
   status?: string;
+  colorId?: string;
+  color_id?: string;
+  color?: string;
+  colorLabel?: string;
 };
 
 export const PRACTICE_CALENDAR_ID =
@@ -108,6 +112,41 @@ function firstProvider(blob: string): VetId | "unknown" {
   return "michaela";
 }
 
+/** Practice legend: Peacock = Davis, Flamingo = Chanutin, Wisteria = Dooley, Tomato = surgery/Davis. */
+const COLOR_VET: Record<string, VetId> = {
+  "1": "michaela",
+  "3": "michaela",
+  "4": "sidney",
+  "7": "weston",
+  "11": "weston",
+  lavender: "michaela",
+  grape: "michaela",
+  wisteria: "michaela",
+  flamingo: "sidney",
+  peacock: "weston",
+  tomato: "weston",
+};
+
+function eventColor(e: RawCalendarEvent): string {
+  return asText(e.colorId) || asText(e.color_id) || asText(e.color) || asText(e.colorLabel);
+}
+
+function vetFromColor(color: string): VetId | "unknown" {
+  const key = color.trim().toLowerCase();
+  return COLOR_VET[key] ?? "unknown";
+}
+
+function colorName(color: string): string {
+  const names: Record<string, string> = {
+    "1": "Lavender",
+    "3": "Wisteria",
+    "4": "Flamingo",
+    "7": "Peacock",
+    "11": "Tomato",
+  };
+  return names[color] ?? color;
+}
+
 export function isSurgeryTitle(title: string, description = ""): boolean {
   const blob = `${title} ${description}`;
   if (/sx\s+consult|\bconsults?\b/i.test(title) && !/\bstanding sx\b|kissing spine|arthroscopy/i.test(blob)) {
@@ -116,7 +155,7 @@ export function isSurgeryTitle(title: string, description = ""): boolean {
   return /\bstanding sx\b|\barthroscopy\b|kissing spine|\bsurgery\b|\bsx\b/i.test(blob);
 }
 
-function detectVet(title: string, description: string): VetId | "unknown" {
+function detectVet(title: string, description: string, color = ""): VetId | "unknown" {
   const fromNotes = firstProvider(description);
   if (fromNotes !== "unknown") return fromNotes;
 
@@ -124,6 +163,10 @@ function detectVet(title: string, description: string): VetId | "unknown" {
   if (/^sc\b/i.test(title) || /\bsidney\b|\bchanutin\b/i.test(title)) return "sidney";
   if (/^wd\b/i.test(title) || /\bweston\b|\bdavis\b/i.test(title)) return "weston";
   if (/\bkj\/wd\b/i.test(title)) return "weston";
+
+  const fromColor = vetFromColor(color);
+  if (fromColor !== "unknown") return fromColor;
+
   if (isSurgeryTitle(title, description)) return "weston";
   return "unknown";
 }
@@ -234,9 +277,11 @@ export function mapPracticeEvents(raw: RawCalendarEvent[]): {
       continue;
     }
 
-    const vetId = detectVet(title, description);
+    const color = eventColor(e);
+    const vetId = detectVet(title, description, color);
     const service = detectService(title, description, vetId);
     const location = asText(e.location).trim() || "Location TBD";
+    const labeled = colorName(color);
 
     appointments.push({
       id,
@@ -247,7 +292,7 @@ export function mapPracticeEvents(raw: RawCalendarEvent[]): {
       location,
       vetId,
       service,
-      colorLabel: vetId === "unknown" ? "Needs review" : vetId,
+      colorLabel: labeled || (vetId === "unknown" ? "Needs review" : vetId),
       kit: inferKit(title, description),
     });
   }

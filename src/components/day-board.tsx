@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { addDays, format, parseISO } from "date-fns";
-import { apptsOn, personName, unknownOn, vetName } from "@/lib/staffing/scheduler";
+import { personName, unknownOn, vetName } from "@/lib/staffing/scheduler";
 import { coverageCounts, useStaffing } from "@/lib/staffing/store";
 import { focusDate } from "@/lib/staffing/dates";
 import { kitEmpty } from "@/lib/staffing/kit";
@@ -45,7 +45,10 @@ export function DayBoard() {
 
   const counts = coverageCounts(plan);
   const unknown = unknownOn(plan.date, appointments);
-  const appts = apptsOn(plan.date, appointments);
+  const appts = appointments
+    .filter((a) => a.date === plan.date)
+    .slice()
+    .sort((a, b) => a.start.localeCompare(b.start) || a.title.localeCompare(b.title));
   const offNames = plan.offIds.map((id) => personName(id, staff)).join(" · ");
   const surgery = plan.doctorWork.weston === "surgery";
   const cards = peopleOnDay(plan, me);
@@ -140,33 +143,10 @@ export function DayBoard() {
         ))}
 
       {unknown.length > 0 && (
-        <section className="rounded-md border border-warn/40 bg-surface p-3">
-          <h3 className="text-sm font-medium text-fg">Needs a doctor tag</h3>
-          <ul className="mt-2 space-y-2">
-            {unknown.map((a) => (
-              <li key={a.id} className="flex flex-col gap-2">
-                <p className="text-sm text-fg">
-                  {a.start}–{a.end} · {a.title}
-                </p>
-                <select
-                  className="min-h-11 rounded-sm border border-border bg-bg px-3 text-sm text-fg"
-                  defaultValue=""
-                  onChange={(e) => {
-                    const v = e.target.value as VetId;
-                    if (v) useStaffing.getState().tagAppointment(a.id, v);
-                  }}
-                >
-                  <option value="">Assign doctor</option>
-                  {doctors.map((d) => (
-                    <option key={d.vetId} value={d.vetId}>
-                      {d.label}
-                    </option>
-                  ))}
-                </select>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <p className="text-sm text-muted">
+          {unknown.length} {unknown.length === 1 ? "stop needs" : "stops need"} a doctor tap. Color
+          is not on this feed.
+        </p>
       )}
 
       <section className="space-y-2">
@@ -249,17 +229,36 @@ function StopCard({ appt }: { appt: Appointment }) {
   const doctors = useStaffing((s) => s.doctors);
   const me = useStaffing((s) => s.me);
   const canKit = !me || me === "alejandro" || me === "kate";
-  const vet = appt.vetId === "unknown" ? "weston" : appt.vetId;
   const kit = appt.kit;
   return (
     <li className="rounded-md border border-border bg-surface p-3">
       <p className="text-xs text-muted">
-        {appt.start}–{appt.end} · {serviceLabel(appt.service)} · {vetName(vet, doctors)}
+        {appt.start}–{appt.end}
+        {appt.vetId === "unknown"
+          ? " · Doctor?"
+          : ` · ${serviceLabel(appt.service)} · ${vetName(appt.vetId, doctors)}`}
       </p>
       <p className="mt-1 text-sm text-fg">{appt.title}</p>
       {appt.location && appt.location !== "Location TBD" && (
         <p className="text-xs text-muted">{appt.location}</p>
       )}
+      <div className="mt-2 flex gap-1">
+        {doctors.map((d) => (
+          <button
+            key={d.vetId}
+            type="button"
+            className={cn(
+              "min-h-11 flex-1 rounded-sm border px-1 text-xs",
+              appt.vetId === d.vetId
+                ? "border-accent bg-accent/15 text-fg"
+                : "border-border text-muted",
+            )}
+            onClick={() => useStaffing.getState().tagAppointment(appt.id, d.vetId)}
+          >
+            {d.label.replace(/^Dr\. /, "")}
+          </button>
+        ))}
+      </div>
       {!kitEmpty(kit) && (
         <div className="mt-2 space-y-2">
           {kit && kit.equipment.length > 0 && (

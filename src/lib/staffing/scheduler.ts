@@ -424,11 +424,11 @@ export function planDay(
     });
   }
 
-  for (const u of unknown) {
+  if (unknown.length) {
     warnings.push({
-      id: `${date}-unknown-${u.id}`,
-      severity: "warn",
-      text: `Needs a doctor tag: “${u.title}” at ${u.start}. Color was not in the feed, so it was not assigned automatically.`,
+      id: `${date}-unknown`,
+      severity: "info",
+      text: `Color is not on this calendar feed. Tap the doctor on ${unknown.length} untagged stop${unknown.length === 1 ? "" : "s"}.`,
     });
   }
 

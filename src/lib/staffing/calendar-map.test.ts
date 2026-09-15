@@ -143,4 +143,50 @@ describe("mapPracticeEvents", () => {
     assert.equal(byId.denmark, undefined);
     assert.equal(byId["sid-off"], undefined);
   });
+
+  it("uses calendar color when Provider is empty, and stays unknown without color", () => {
+    const mapped = mapPracticeEvents([
+      {
+        event_id: "flamingo",
+        summary: "Weinwurm PPE- Kalika",
+        colorId: "4",
+        start_time: "2026-09-15T14:00:00-04:00",
+        end_time: "2026-09-15T17:00:00-04:00",
+      },
+      {
+        event_id: "peacock",
+        summary: "Brown- Oliver sarcoid eval",
+        color: "Peacock",
+        start_time: "2026-09-16T09:00:00-04:00",
+        end_time: "2026-09-16T09:30:00-04:00",
+      },
+      {
+        event_id: "dooley",
+        summary: "Sedate lip for Valdo",
+        colorLabel: "Wisteria",
+        start_time: "2026-09-14T09:00:00-04:00",
+        end_time: "2026-09-14T10:15:00-04:00",
+      },
+      {
+        event_id: "nocolor",
+        summary: "Steele-lil bit vax and coggins",
+        start_time: "2026-09-15T13:30:00-04:00",
+        end_time: "2026-09-15T14:30:00-04:00",
+      },
+      {
+        event_id: "provider-wins",
+        summary: "Wilberg lameness",
+        description: "Provider: SC",
+        colorId: "7",
+        start_time: "2026-09-15T09:30:00-04:00",
+        end_time: "2026-09-15T13:30:00-04:00",
+      },
+    ]);
+    const byId = Object.fromEntries(mapped.appointments.map((a) => [a.id, a]));
+    assert.equal(byId.flamingo?.vetId, "sidney");
+    assert.equal(byId.peacock?.vetId, "weston");
+    assert.equal(byId.dooley?.vetId, "michaela");
+    assert.equal(byId.nocolor?.vetId, "unknown");
+    assert.equal(byId["provider-wins"]?.vetId, "sidney");
+  });
 });

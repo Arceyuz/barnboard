@@ -388,7 +388,14 @@ export const useStaffing = create<StaffingState>()(
       },
       tagAppointment: (id, vetId) => {
         const appointments = get().appointments.map((a) =>
-          a.id === id ? { ...a, vetId, colorLabel: vetId === "unknown" ? "Needs review" : vetId } : a,
+          a.id === id
+            ? {
+                ...a,
+                vetId,
+                colorLabel: vetId === "unknown" ? "Needs review" : vetId,
+                vetCustom: true,
+              }
+            : a,
         );
         set({
           appointments,
@@ -484,8 +491,17 @@ export const useStaffing = create<StaffingState>()(
           const old =
             prior.find((p) => p.id === a.id) ??
             prior.find((p) => p.date === a.date && p.start === a.start && p.title === a.title);
-          if (old?.kitCustom) return { ...a, kit: old.kit, kitCustom: true };
-          return a;
+          let next = a;
+          if (old?.kitCustom) next = { ...next, kit: old.kit, kitCustom: true };
+          if (old && old.vetId !== "unknown" && (old.vetCustom || a.vetId === "unknown")) {
+            next = {
+              ...next,
+              vetId: old.vetId,
+              colorLabel: old.colorLabel,
+              vetCustom: true,
+            };
+          }
+          return next;
         });
         const plans = buildPlans(weekDates, appointments, payload.roster, {}, {
           staff: get().staff,
@@ -526,7 +542,7 @@ export const useStaffing = create<StaffingState>()(
       resetDemo: () => set({ ...seedState(), calendars: get().calendars, me: get().me }),
     }),
     {
-      name: "barnboard-v6",
+      name: "barnboard-v7",
       skipHydration: true,
       partialize: (s) => ({
         selectedDate: s.selectedDate,
