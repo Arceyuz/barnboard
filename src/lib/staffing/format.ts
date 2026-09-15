@@ -24,6 +24,7 @@ export function dayTiny(date: string): string {
 export function serviceLabel(kind: ServiceKind): string {
   if (kind === "surgery") return "Surgery";
   if (kind === "sports") return "Sports med";
+  if (kind === "tech") return "Alejandro";
   return "Field";
 }
 

@@ -18,6 +18,7 @@ Live Google Calendar pairing works inside Grok. The public site still has this w
 - **Dr. Davis** always has Alejandro plus Kaycee, Alice, or Becca
 - **Dr. Sidney** has one tech (Becca when she is free). Do not steal Becca for Weston when Sidney has appointments
 - **Dr. Dooley** follows. She does not get a separate tech
+- **Alejandro** also runs his own stops (vax, coggins, tech calls). If those overlap a doctor, the board flags it
 - Kate is office only
 
 ## How to try it

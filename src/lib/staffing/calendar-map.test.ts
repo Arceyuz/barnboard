@@ -189,4 +189,25 @@ describe("mapPracticeEvents", () => {
     assert.equal(byId.nocolor?.vetId, "unknown");
     assert.equal(byId["provider-wins"]?.vetId, "sidney");
   });
+
+  it("tags Alejandro’s own stops from his name, not the morning teching line", () => {
+    const mapped = mapPracticeEvents([
+      {
+        event_id: "tech",
+        summary: "Alej, Becca, Kaycee teching",
+        start_time: "2026-09-15T05:00:00-04:00",
+        end_time: "2026-09-15T05:00:00-04:00",
+      },
+      {
+        event_id: "mine",
+        summary: "Alejandro — Steele vax and coggins",
+        start_time: "2026-09-15T13:30:00-04:00",
+        end_time: "2026-09-15T14:30:00-04:00",
+      },
+    ]);
+    const byId = Object.fromEntries(mapped.appointments.map((a) => [a.id, a]));
+    assert.equal(byId.tech, undefined);
+    assert.equal(byId.mine?.vetId, "alejandro");
+    assert.equal(byId.mine?.service, "tech");
+  });
 });

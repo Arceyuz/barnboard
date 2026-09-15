@@ -1,5 +1,6 @@
 export type PersonId = string;
 export type VetId = "weston" | "sidney" | "michaela";
+export type CoverId = VetId | "alejandro";
 export type Role = "primary" | "secondary" | "float" | "office" | "oncall";
 export type TeamKind = VetId | "float" | "office" | "oncall";
 export type AttendanceStatus =
@@ -13,7 +14,7 @@ export type AttendanceStatus =
 export type DayStatus = "suggested" | "approved" | "locked";
 export type TaskState = "open" | "done" | "handed_off" | "blocked";
 export type ViewId = "week" | "day" | "team";
-export type ServiceKind = "sports" | "surgery" | "field";
+export type ServiceKind = "sports" | "surgery" | "field" | "tech";
 export type CalendarSource = "demo" | "google";
 export type DutyWhen = "during" | "eod";
 export type DoctorWork = "not_set" | "off" | "working" | "sports" | "surgery";
@@ -61,7 +62,7 @@ export type Appointment = {
   end: string;
   title: string;
   location: string;
-  vetId: VetId | "unknown";
+  vetId: CoverId | "unknown";
   service: ServiceKind;
   colorLabel: string;
   notes?: string;
@@ -72,7 +73,7 @@ export type Appointment = {
 };
 
 export type Assignment = {
-  vetId: VetId;
+  vetId: CoverId;
   primaryId: PersonId | null;
   secondaryId: PersonId | null;
   floatId: PersonId | null;
@@ -93,7 +94,7 @@ export type Task = {
   required: boolean;
   state: TaskState;
   blocker?: string;
-  vetId: VetId | "office";
+  vetId: CoverId | "office";
   when: DutyWhen;
   custom?: boolean;
 };

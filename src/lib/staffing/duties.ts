@@ -2,6 +2,7 @@ import { DOCTORS, DUTY_TEMPLATES, STAFF } from "./seed.ts";
 import type {
   Appointment,
   Assignment,
+  CoverId,
   DoctorTeam,
   DutyTemplate,
   Person,
@@ -10,15 +11,17 @@ import type {
   VetId,
 } from "./types.ts";
 
-function truckFor(vetId: VetId, doctors: DoctorTeam[]): string {
+function truckFor(vetId: CoverId, doctors: DoctorTeam[]): string {
+  if (vetId === "alejandro") return "Alejandro's truck";
   return doctors.find((d) => d.vetId === vetId)?.truck ?? "the truck";
 }
 
-function needsTwo(vetId: VetId, doctors: DoctorTeam[]): boolean {
+function needsTwo(vetId: CoverId, doctors: DoctorTeam[]): boolean {
+  if (vetId === "alejandro") return false;
   return doctors.find((d) => d.vetId === vetId)?.needsTwo ?? vetId === "weston";
 }
 
-function interpolate(label: string, vetId: VetId, doctors: DoctorTeam[]): string {
+function interpolate(label: string, vetId: CoverId, doctors: DoctorTeam[]): string {
   return label.replace(/\{truck\}/g, truckFor(vetId, doctors));
 }
 
@@ -26,7 +29,7 @@ function pushDuty(
   tasks: Task[],
   date: string,
   ownerId: PersonId,
-  vetId: VetId | "office",
+  vetId: CoverId | "office",
   template: DutyTemplate,
   doctors: DoctorTeam[],
 ) {
@@ -75,6 +78,15 @@ export function makeDuties(
 
   for (const asg of assignments) {
     if (asg.vetId === "michaela") continue;
+    if (asg.vetId === "alejandro") {
+      const alreadyOnDoctor = assignments.some(
+        (a) =>
+          a.vetId !== "alejandro" &&
+          a.vetId !== "michaela" &&
+          (a.primaryId === "alejandro" || a.secondaryId === "alejandro"),
+      );
+      if (alreadyOnDoctor) continue;
+    }
     const two = needsTwo(asg.vetId, doctors);
     const oneTechGetsSecondary = !two || !asg.secondaryId;
 

@@ -47,6 +47,45 @@ describe("Tuesday crew duties", () => {
     assert.ok(withFlag.some((t) => t.label === "Stage the surgery pack"));
     assert.ok(!without.some((t) => t.label === "Stage the surgery pack"));
   });
+
+  it("keeps Alejandro on his own stops and flags overlap with Weston", () => {
+    const appts = [
+      {
+        id: "sx",
+        date: "2026-09-15",
+        start: "09:00",
+        end: "12:00",
+        title: "Jazzy",
+        location: "Hospital",
+        vetId: "weston" as const,
+        service: "surgery" as const,
+        colorLabel: "Tomato",
+      },
+      {
+        id: "vax",
+        date: "2026-09-15",
+        start: "09:30",
+        end: "10:30",
+        title: "Steele vax",
+        location: "Field",
+        vetId: "alejandro" as const,
+        service: "tech" as const,
+        colorLabel: "alejandro",
+      },
+    ];
+    const overlap = planDay("2026-09-15", [], undefined, { appointments: appts });
+    assert.equal(overlap.assignments.find((a) => a.vetId === "alejandro")?.primaryId, "alejandro");
+    assert.ok(overlap.warnings.some((w) => /overlapping Dr\. Davis/.test(w.text)));
+
+    const later = planDay("2026-09-15", [], undefined, {
+      appointments: [
+        appts[0]!,
+        { ...appts[1]!, start: "13:30", end: "14:30" },
+      ],
+    });
+    assert.ok(!later.warnings.some((w) => /overlapping Dr\. Davis/.test(w.text)));
+    assert.equal(later.assignments.find((a) => a.vetId === "alejandro")?.appointmentIds.length, 1);
+  });
 });
 
 describe("makeDuties", () => {

@@ -4,6 +4,7 @@ import type {
   Appointment,
   Assignment,
   Attendance,
+  CoverId,
   DayPlan,
   DoctorTeam,
   DoctorWork,
@@ -56,7 +57,8 @@ function doctorsOf(ctx: PlanContext): DoctorTeam[] {
   return ctx.doctors ?? DOCTORS;
 }
 
-function needsTwo(vetId: VetId, doctors: DoctorTeam[]): boolean {
+function needsTwo(vetId: CoverId, doctors: DoctorTeam[]): boolean {
+  if (vetId === "alejandro") return false;
   return doctors.find((d) => d.vetId === vetId)?.needsTwo ?? vetId === "weston";
 }
 
@@ -222,11 +224,12 @@ export function planDay(
   const warnings: Warning[] = [];
   const assignments: Assignment[] = [];
 
-  const byVet = (id: VetId) => appts.filter((a) => a.vetId === id);
+  const byVet = (id: CoverId) => appts.filter((a) => a.vetId === id);
   const weston = byVet("weston");
   const sidney = byVet("sidney");
   const doole = byVet("michaela");
-  const hasAppts = weston.length + sidney.length + doole.length > 0;
+  const alejandroAppts = byVet("alejandro");
+  const hasAppts = weston.length + sidney.length + doole.length + alejandroAppts.length > 0;
 
   const doctorWork: Record<VetId, DoctorWork> = {
     weston: inferDoctorWork("weston", appts, ctx.doctorWork?.weston ?? previous?.doctorWork.weston),
@@ -333,9 +336,43 @@ export function planDay(
         coverage: "covered",
       });
     }
+
+    if (alejandroAppts.length) {
+      const alejandroHere = available.has("alejandro");
+      assignments.push({
+        vetId: "alejandro",
+        primaryId: alejandroHere ? "alejandro" : null,
+        secondaryId: null,
+        floatId: null,
+        appointmentIds: alejandroAppts.map((a) => a.id),
+        coverage: alejandroHere ? "covered" : "none",
+      });
+      if (!alejandroHere) {
+        warnings.push({
+          id: `${date}-alejandro-gone`,
+          severity: "block",
+          text: "Alejandro has stops on the book but is not available today.",
+        });
+      }
+      if (weston.length && timesOverlap(alejandroAppts, weston)) {
+        warnings.push({
+          id: `${date}-alejandro-weston`,
+          severity: "block",
+          text: "Alejandro has his own stops overlapping Dr. Davis. He cannot be on both at the same time.",
+        });
+      }
+      if (sidney.length && timesOverlap(alejandroAppts, sidney)) {
+        warnings.push({
+          id: `${date}-alejandro-sidney`,
+          severity: "block",
+          text: "Alejandro has his own stops overlapping Dr. Chanutin. He cannot be on both at the same time.",
+        });
+      }
+    }
   } else {
     const usual = fillUsualDay(date, ctx);
     for (const asg of usual.assignments) {
+      if (asg.vetId === "alejandro") continue;
       const work = doctorWork[asg.vetId];
       if (work === "off") {
         assignments.push({
@@ -428,7 +465,7 @@ export function planDay(
     warnings.push({
       id: `${date}-unknown`,
       severity: "info",
-      text: `Color is not on this calendar feed. Tap the doctor on ${unknown.length} untagged stop${unknown.length === 1 ? "" : "s"}.`,
+      text: `Color is not on this calendar feed. Tap Davis, Chanutin, Dooley, or Alejandro on ${unknown.length} untagged stop${unknown.length === 1 ? "" : "s"}.`,
     });
   }
 
@@ -475,7 +512,8 @@ export function personName(id: PersonId | null, staff: Person[] = STAFF): string
   return staff.find((s) => s.id === id)?.name ?? id;
 }
 
-export function vetName(id: VetId, doctors: DoctorTeam[] = DOCTORS): string {
+export function vetName(id: CoverId, doctors: DoctorTeam[] = DOCTORS): string {
+  if (id === "alejandro") return "Alejandro";
   return doctors.find((d) => d.vetId === id)?.label ?? id;
 }
 

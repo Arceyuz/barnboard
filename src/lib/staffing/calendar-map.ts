@@ -1,7 +1,7 @@
 import { inferKit } from "./kit.ts";
 import { STAFF } from "./seed.ts";
 import { clockFromIso, dateFromIso, minutesBetween } from "./dates.ts";
-import type { Appointment, PersonId, RosterDay, ServiceKind, VetId } from "./types.ts";
+import type { Appointment, CoverId, PersonId, RosterDay, ServiceKind, VetId } from "./types.ts";
 
 export type RawCalendarEvent = {
   event_id?: string;
@@ -103,7 +103,7 @@ function stripHtml(value: string): string {
     .trim();
 }
 
-function firstProvider(blob: string): VetId | "unknown" {
+function firstProvider(blob: string): CoverId | "unknown" {
   const match = blob.match(/provider:\s*(wd|sc|md)\b/i);
   if (!match) return "unknown";
   const code = match[1].toUpperCase();
@@ -155,7 +155,7 @@ export function isSurgeryTitle(title: string, description = ""): boolean {
   return /\bstanding sx\b|\barthroscopy\b|kissing spine|\bsurgery\b|\bsx\b/i.test(blob);
 }
 
-function detectVet(title: string, description: string, color = ""): VetId | "unknown" {
+function detectVet(title: string, description: string, color = ""): CoverId | "unknown" {
   const fromNotes = firstProvider(description);
   if (fromNotes !== "unknown") return fromNotes;
 
@@ -163,6 +163,13 @@ function detectVet(title: string, description: string, color = ""): VetId | "unk
   if (/^sc\b/i.test(title) || /\bsidney\b|\bchanutin\b/i.test(title)) return "sidney";
   if (/^wd\b/i.test(title) || /\bweston\b|\bdavis\b/i.test(title)) return "weston";
   if (/\bkj\/wd\b/i.test(title)) return "weston";
+  if (
+    /\balejandro\b|\balej\b/i.test(title) &&
+    !/teching/i.test(title) &&
+    !/\b(wd|davis|weston|sidney|chanutin|doole)/i.test(title)
+  ) {
+    return "alejandro";
+  }
 
   const fromColor = vetFromColor(color);
   if (fromColor !== "unknown") return fromColor;
@@ -171,8 +178,9 @@ function detectVet(title: string, description: string, color = ""): VetId | "unk
   return "unknown";
 }
 
-function detectService(title: string, description: string, vet: VetId | "unknown"): ServiceKind {
+function detectService(title: string, description: string, vet: CoverId | "unknown"): ServiceKind {
   if (isSurgeryTitle(title, description)) return "surgery";
+  if (vet === "alejandro") return "tech";
   if (vet === "weston") return "sports";
   return "field";
 }

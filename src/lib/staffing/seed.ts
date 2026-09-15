@@ -1,4 +1,4 @@
-import type { Appointment, DoctorTeam, DutyTemplate, Person, VetId } from "./types.ts";
+import type { Appointment, CoverId, DoctorTeam, DutyTemplate, Person, VetId } from "./types.ts";
 import { inferKit } from "./kit.ts";
 
 export const STAFF: Person[] = [
@@ -12,7 +12,7 @@ export const STAFF: Person[] = [
     usualTeam: "weston",
     usualRole: "primary",
     surgery: true,
-    notes: "Required primary on every Weston appointment, including surgery.",
+    notes: "Required primary on Weston appointments, including surgery. Also runs his own field stops (vax, coggins, tech calls).",
   },
   {
     id: "becca",
@@ -69,6 +69,13 @@ export const DOCTORS: DoctorTeam[] = [
   { vetId: "weston", name: "Weston Davis", label: "Dr. Davis", truck: "Dr. Davis's truck", needsTwo: true },
   { vetId: "sidney", name: "Sidney Chanutin", label: "Dr. Chanutin", truck: "Chanutin truck", needsTwo: false },
   { vetId: "michaela", name: "Michaela Dooley", label: "Dr. Dooley", truck: "Dr. Dooley's truck", needsTwo: false },
+];
+
+export const COVER_OPTIONS: { id: CoverId; short: string; label: string }[] = [
+  { id: "weston", short: "Davis", label: "Dr. Davis" },
+  { id: "sidney", short: "Chanutin", label: "Dr. Chanutin" },
+  { id: "michaela", short: "Dooley", label: "Dr. Dooley" },
+  { id: "alejandro", short: "Alejandro", label: "Alejandro" },
 ];
 
 export const VETS: Record<VetId, { name: string; label: string }> = {

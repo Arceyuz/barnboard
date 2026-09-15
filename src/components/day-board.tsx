@@ -6,7 +6,7 @@ import { addDays, format, parseISO } from "date-fns";
 import { personName, unknownOn, vetName } from "@/lib/staffing/scheduler";
 import { coverageCounts, useStaffing } from "@/lib/staffing/store";
 import { focusDate } from "@/lib/staffing/dates";
-import { kitEmpty } from "@/lib/staffing/kit";
+import { COVER_OPTIONS } from "@/lib/staffing/seed";
 import {
   attendanceLabel,
   dayLong,
@@ -15,9 +15,11 @@ import {
   roleLabel,
   serviceLabel,
 } from "@/lib/staffing/format";
+import { kitEmpty } from "@/lib/staffing/kit";
 import type {
   Appointment,
   AttendanceStatus,
+  CoverId,
   DoctorWork,
   Kit,
   Person,
@@ -144,8 +146,8 @@ export function DayBoard() {
 
       {unknown.length > 0 && (
         <p className="text-sm text-muted">
-          {unknown.length} {unknown.length === 1 ? "stop needs" : "stops need"} a doctor tap. Color
-          is not on this feed.
+          {unknown.length} {unknown.length === 1 ? "stop needs" : "stops need"} a tap. Color is not
+          on this feed — pick Davis, Chanutin, Dooley, or Alejandro.
         </p>
       )}
 
@@ -242,20 +244,18 @@ function StopCard({ appt }: { appt: Appointment }) {
       {appt.location && appt.location !== "Location TBD" && (
         <p className="text-xs text-muted">{appt.location}</p>
       )}
-      <div className="mt-2 flex gap-1">
-        {doctors.map((d) => (
+      <div className="mt-2 grid grid-cols-2 gap-1 sm:grid-cols-4">
+        {COVER_OPTIONS.map((d) => (
           <button
-            key={d.vetId}
+            key={d.id}
             type="button"
             className={cn(
-              "min-h-11 flex-1 rounded-sm border px-1 text-xs",
-              appt.vetId === d.vetId
-                ? "border-accent bg-accent/15 text-fg"
-                : "border-border text-muted",
+              "min-h-11 rounded-sm border px-1 text-xs",
+              appt.vetId === d.id ? "border-accent bg-accent/15 text-fg" : "border-border text-muted",
             )}
-            onClick={() => useStaffing.getState().tagAppointment(appt.id, d.vetId)}
+            onClick={() => useStaffing.getState().tagAppointment(appt.id, d.id)}
           >
-            {d.label.replace(/^Dr\. /, "")}
+            {d.short}
           </button>
         ))}
       </div>
@@ -411,13 +411,19 @@ function peopleOnDay(
   me: PersonId | null,
 ) {
   const rows: { personId: PersonId; role: Role; team: string }[] = [];
+  const seen = new Set<PersonId>();
+  const push = (row: { personId: PersonId; role: Role; team: string }) => {
+    if (seen.has(row.personId)) return;
+    seen.add(row.personId);
+    rows.push(row);
+  };
   for (const asg of plan.assignments) {
-    if (asg.primaryId) rows.push({ personId: asg.primaryId, role: "primary", team: asg.vetId });
-    if (asg.secondaryId) rows.push({ personId: asg.secondaryId, role: "secondary", team: asg.vetId });
-    if (asg.floatId) rows.push({ personId: asg.floatId, role: "float", team: "float" });
+    if (asg.primaryId) push({ personId: asg.primaryId, role: "primary", team: asg.vetId });
+    if (asg.secondaryId) push({ personId: asg.secondaryId, role: "secondary", team: asg.vetId });
+    if (asg.floatId) push({ personId: asg.floatId, role: "float", team: "float" });
   }
-  if (plan.officeId) rows.push({ personId: plan.officeId, role: "office", team: "office" });
-  for (const id of plan.onCallIds) rows.push({ personId: id, role: "oncall", team: "oncall" });
+  if (plan.officeId) push({ personId: plan.officeId, role: "office", team: "office" });
+  for (const id of plan.onCallIds) push({ personId: id, role: "oncall", team: "oncall" });
   if (me) rows.sort((a, b) => Number(b.personId === me) - Number(a.personId === me));
   return rows;
 }
@@ -465,7 +471,9 @@ function PersonCard({
         ? "Float"
         : team === "oncall"
           ? "On call"
-          : `${roleLabel(role)} · ${vetName(team as VetId, doctors)}`;
+          : team === "alejandro"
+            ? "Alejandro’s stops"
+            : `${roleLabel(role)} · ${vetName(team as CoverId, doctors)}`;
   const hot = att && (att.status === "late" || att.status === "no_show" || att.status === "call_out");
 
   return (
@@ -557,9 +565,8 @@ function DutyList({ title, ids }: { title: string; ids: string[] }) {
 }
 
 function AddStopForm({ onDone }: { onDone?: () => void }) {
-  const doctors = useStaffing((s) => s.doctors);
   const [title, setTitle] = useState("");
-  const [vetId, setVetId] = useState<VetId>("weston");
+  const [vetId, setVetId] = useState<CoverId>("weston");
   return (
     <form
       className="grid gap-2"
@@ -580,10 +587,10 @@ function AddStopForm({ onDone }: { onDone?: () => void }) {
       <select
         className="min-h-11 rounded-sm border border-border bg-bg px-3 text-sm text-fg"
         value={vetId}
-        onChange={(e) => setVetId(e.target.value as VetId)}
+        onChange={(e) => setVetId(e.target.value as CoverId)}
       >
-        {doctors.map((d) => (
-          <option key={d.vetId} value={d.vetId}>
+        {COVER_OPTIONS.map((d) => (
+          <option key={d.id} value={d.id}>
             {d.label}
           </option>
         ))}

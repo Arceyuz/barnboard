@@ -109,6 +109,25 @@ export function WeekBoard() {
                 ))}
               </tr>
             ))}
+            <tr className="border-t border-border">
+              <th className="sticky left-0 bg-bg px-3 py-3 text-left">
+                <p className="text-xs uppercase tracking-wider text-fg">Alejandro</p>
+                <p className="text-xs text-muted">His own stops</p>
+              </th>
+              {weekDates.map((d) => {
+                const asg = plans[d]?.assignments.find((a) => a.vetId === "alejandro");
+                const n = asg?.appointmentIds.length ?? 0;
+                return (
+                  <td key={d} className="px-2 py-2 align-top text-sm">
+                    {n ? (
+                      <Chip role="primary" name={`${n} stop${n === 1 ? "" : "s"}`} />
+                    ) : (
+                      <p className="text-muted">—</p>
+                    )}
+                  </td>
+                );
+              })}
+            </tr>
             <SlotRow label="Float" hint="Extra help" kind="float" dates={weekDates} />
             <SlotRow label="Office" hint="Not clinical coverage" kind="office" dates={weekDates} />
             <SlotRow label="On call" hint="Emergencies, no appointments" kind="oncall" dates={weekDates} />

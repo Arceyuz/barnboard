@@ -18,6 +18,7 @@ import type {
   AttendanceStatus,
   CalendarInfo,
   CalendarSource,
+  CoverId,
   DayPlan,
   DoctorTeam,
   DoctorWork,
@@ -68,11 +69,11 @@ type StaffingState = {
   setAttendance: (personId: PersonId, status: AttendanceStatus, note?: string) => void;
   setTask: (taskId: string, state: TaskState, blocker?: string) => void;
   addTask: (ownerId: PersonId, label: string, when: DutyWhen) => void;
-  addAppointment: (input: { title: string; start: string; end: string; vetId: VetId }) => void;
+  addAppointment: (input: { title: string; start: string; end: string; vetId: CoverId }) => void;
   updateKit: (id: string, kit: Appointment["kit"]) => void;
   setDoctorWork: (vetId: VetId, work: DoctorWork) => void;
   assignSuggested: (vetId: VetId) => void;
-  tagAppointment: (id: string, vetId: VetId | "unknown") => void;
+  tagAppointment: (id: string, vetId: CoverId | "unknown") => void;
   updatePerson: (id: PersonId, patch: Partial<Person>) => void;
   addPerson: (name: string) => void;
   updateDoctor: (vetId: VetId, patch: Partial<DoctorTeam>) => void;
@@ -317,7 +318,7 @@ export const useStaffing = create<StaffingState>()(
           title: input.title.trim(),
           location: "Added on board",
           vetId: input.vetId,
-          service: input.vetId === "weston" ? "sports" : "field",
+          service: input.vetId === "weston" ? "sports" : input.vetId === "alejandro" ? "tech" : "field",
           colorLabel: input.vetId,
           custom: true,
           kit: inferKit(input.title.trim()),
@@ -542,7 +543,7 @@ export const useStaffing = create<StaffingState>()(
       resetDemo: () => set({ ...seedState(), calendars: get().calendars, me: get().me }),
     }),
     {
-      name: "barnboard-v7",
+      name: "barnboard-v8",
       skipHydration: true,
       partialize: (s) => ({
         selectedDate: s.selectedDate,
