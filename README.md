@@ -27,6 +27,6 @@ Live Google Calendar pairing works inside Grok. The public site still has this w
 2. Set **I am** → Alejandro
 3. Stay on **Day** for Tuesday Sep 15 (Surgery)
 4. Check **Sterile prep** and **Stage the surgery pack**
-5. Open **Week** and tap the **Tue 15** surgery chip
+5. Open **Week** and switch **Day / Week / Month**. Week is stacked day cards. Month is a Mon–Sat grid. Tap a day to open duties.
 6. Open **Team & duties** to edit workdays, trucks, and the duty library
-7. Tap **Load my calendar** (inside Grok) to pull live Appointments
+7. Tap **Load my calendar** to pull live Appointments. Prev/next loads that range.

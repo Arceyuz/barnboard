@@ -2,10 +2,9 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { addDays, format, parseISO } from "date-fns";
 import { personName, unknownOn, vetName } from "@/lib/staffing/scheduler";
 import { coverageCounts, useStaffing } from "@/lib/staffing/store";
-import { focusDate } from "@/lib/staffing/dates";
+import { addWorkingDays, focusDate, skipSunday } from "@/lib/staffing/dates";
 import { COVER_OPTIONS } from "@/lib/staffing/seed";
 import {
   attendanceLabel,
@@ -35,7 +34,6 @@ const ATTEND: AttendanceStatus[] = ["expected", "on_site", "late", "no_show", "c
 export function DayBoard() {
   const plan = useStaffing((s) => s.plans[s.selectedDate]);
   const selectedDate = useStaffing((s) => s.selectedDate);
-  const weekDates = useStaffing((s) => s.weekDates);
   const appointments = useStaffing((s) => s.appointments);
   const staff = useStaffing((s) => s.staff);
   const doctors = useStaffing((s) => s.doctors);
@@ -57,8 +55,7 @@ export function DayBoard() {
   const openByPerson = groupOpen(plan, staff);
 
   const jump = (delta: number) => {
-    const next = format(addDays(parseISO(selectedDate), delta), "yyyy-MM-dd");
-    if (weekDates.includes(next)) useStaffing.getState().setDate(next);
+    useStaffing.getState().setDate(addWorkingDays(selectedDate, delta));
   };
 
   return (
@@ -83,10 +80,7 @@ export function DayBoard() {
             <Button
               size="sm"
               variant="secondary"
-              onClick={() => {
-                const today = focusDate();
-                useStaffing.getState().setDate(weekDates.includes(today) ? today : selectedDate);
-              }}
+              onClick={() => useStaffing.getState().setDate(skipSunday(focusDate(), 1))}
             >
               Today
             </Button>

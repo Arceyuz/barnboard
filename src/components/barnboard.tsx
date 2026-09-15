@@ -83,26 +83,25 @@ async function pullCalendar(calendarId?: string) {
 
 export function Barnboard() {
   const setHydrated = useStaffing((s) => s.setHydrated);
+  const hydrated = useStaffing((s) => s.hydrated);
   const view = useStaffing((s) => s.view);
   const calendarStatus = useStaffing((s) => s.calendarStatus);
+  const weekKey = useStaffing((s) => s.weekDates.join(","));
   const waiting = calendarStatus === "pending";
 
   const refetch = useCallback(() => pullCalendar(), []);
   const waitStatus = useRefetchWhenConnectorReady(waiting, refetch);
 
   useEffect(() => {
-    let cancelled = false;
     void Promise.resolve(useStaffing.persist.rehydrate()).finally(() => {
-      if (!cancelled) setHydrated();
+      setHydrated();
     });
-    return () => {
-      cancelled = true;
-    };
   }, [setHydrated]);
 
   useEffect(() => {
+    if (!hydrated || !weekKey) return;
     void pullCalendar();
-  }, []);
+  }, [hydrated, weekKey]);
 
   useEffect(() => {
     if (waitStatus === "not_embedded") {

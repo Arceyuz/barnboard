@@ -1,24 +1,25 @@
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
+import { atNoon } from "./dates";
 import type { AttendanceStatus, DoctorWork, Role, ServiceKind } from "./types";
 
 export function dayTitle(date: string): string {
-  return format(parseISO(date), "EEEE, MMM d");
+  return format(atNoon(date), "EEEE, MMM d");
 }
 
 export function dayLong(date: string): string {
-  return format(parseISO(date), "EEEE").toUpperCase();
+  return format(atNoon(date), "EEEE").toUpperCase();
 }
 
 export function monthDay(date: string): string {
-  return format(parseISO(date), "MMMM d, yyyy").toUpperCase();
+  return format(atNoon(date), "MMMM d, yyyy").toUpperCase();
 }
 
 export function dayShort(date: string): string {
-  return format(parseISO(date), "EEE d");
+  return format(atNoon(date), "EEE d");
 }
 
 export function dayTiny(date: string): string {
-  return format(parseISO(date), "EEE");
+  return format(atNoon(date), "EEE");
 }
 
 export function serviceLabel(kind: ServiceKind): string {

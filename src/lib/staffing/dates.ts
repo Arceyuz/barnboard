@@ -1,3 +1,5 @@
+import type { CalendarSpan } from "./types";
+
 function ymdInNy(date = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/New_York",
@@ -17,13 +19,90 @@ function hourInNy(date = new Date()): number {
   );
 }
 
-function addDays(ymd: string, days: number): string {
+export function addDays(ymd: string, days: number): string {
   const d = new Date(`${ymd}T12:00:00`);
   d.setDate(d.getDate() + days);
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
+}
+
+export function atNoon(ymd: string): Date {
+  return new Date(`${ymd}T12:00:00`);
+}
+
+export function weekday(ymd: string): number {
+  return new Date(`${ymd}T12:00:00`).getDay();
+}
+
+export function skipSunday(ymd: string, dir: 1 | -1 = 1): string {
+  return weekday(ymd) === 0 ? addDays(ymd, dir) : ymd;
+}
+
+export function addWorkingDays(ymd: string, days: number): string {
+  if (days === 0) return skipSunday(ymd, 1);
+  const step = days > 0 ? 1 : -1;
+  let left = Math.abs(days);
+  let cursor = ymd;
+  while (left > 0) {
+    cursor = addDays(cursor, step);
+    if (weekday(cursor) !== 0) left -= 1;
+  }
+  return cursor;
+}
+
+export function addMonths(ymd: string, months: number): string {
+  const d = new Date(`${ymd}T12:00:00`);
+  const day = d.getDate();
+  d.setDate(1);
+  d.setMonth(d.getMonth() + months);
+  const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  d.setDate(Math.min(day, last));
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${dd}`;
+}
+
+/** Monday–Saturday of the week that contains `ymd` (Sunday maps to the prior week). */
+export function weekDatesFor(ymd: string): string[] {
+  const dow = weekday(ymd);
+  const mondayOffset = dow === 0 ? -6 : 1 - dow;
+  const monday = addDays(ymd, mondayOffset);
+  return [0, 1, 2, 3, 4, 5].map((i) => addDays(monday, i));
+}
+
+function monthStart(ymd: string): string {
+  return `${ymd.slice(0, 7)}-01`;
+}
+
+/** Mon–Sat cells for the month of `ymd`, including adjacent-month padding. */
+export function monthGridDates(ymd: string): string[] {
+  const start = monthStart(ymd);
+  const last = addDays(addMonths(start, 1), -1);
+  const firstMonday = weekDatesFor(start)[0] ?? start;
+  const lastSaturday = weekDatesFor(last)[5] ?? last;
+  const dates: string[] = [];
+  let cursor = firstMonday;
+  while (cursor <= lastSaturday) {
+    if (weekday(cursor) !== 0) dates.push(cursor);
+    cursor = addDays(cursor, 1);
+  }
+  return dates;
+}
+
+export function datesForSpan(span: CalendarSpan, ymd: string): string[] {
+  const day = skipSunday(ymd, 1);
+  if (span === "day") return [day];
+  if (span === "week") return weekDatesFor(day);
+  return monthGridDates(day);
+}
+
+export function shiftAnchor(ymd: string, span: CalendarSpan, delta: number): string {
+  if (span === "day") return addWorkingDays(ymd, delta);
+  if (span === "week") return skipSunday(addDays(ymd, 7 * delta), 1);
+  return skipSunday(addMonths(ymd, delta), 1);
 }
 
 function nyOffset(ymd: string): string {
@@ -45,11 +124,11 @@ function midnightRfc(ymd: string): string {
 
 /** Monday–Saturday of the current America/New_York week. */
 export function currentWeekDates(now = new Date()): string[] {
-  const today = ymdInNy(now);
-  const dow = new Date(`${today}T12:00:00`).getDay();
-  const mondayOffset = dow === 0 ? -6 : 1 - dow;
-  const monday = addDays(today, mondayOffset);
-  return [0, 1, 2, 3, 4, 5].map((i) => addDays(monday, i));
+  return weekDatesFor(ymdInNy(now));
+}
+
+export function todayInNy(now = new Date()): string {
+  return ymdInNy(now);
 }
 
 export function focusDate(now = new Date()): string {
@@ -83,6 +162,28 @@ export function dayWindows(timeMin: string, timeMax: string): { timeMin: string;
     cursor = next;
   }
   return windows.length ? windows : [{ timeMin, timeMax }];
+}
+
+export function chunkWindows(
+  windows: { timeMin: string; timeMax: string }[],
+  size: number,
+): { timeMin: string; timeMax: string }[] {
+  if (windows.length <= size) return windows;
+  const chunks: { timeMin: string; timeMax: string }[] = [];
+  for (let i = 0; i < windows.length; i += size) {
+    const slice = windows.slice(i, i + size);
+    const first = slice[0];
+    const last = slice[slice.length - 1];
+    if (!first || !last) continue;
+    chunks.push({ timeMin: first.timeMin, timeMax: last.timeMax });
+  }
+  return chunks.length ? chunks : windows;
+}
+
+export function fetchWindows(timeMin: string, timeMax: string): { timeMin: string; timeMax: string }[] {
+  const days = dayWindows(timeMin, timeMax);
+  if (days.length <= 8) return days;
+  return chunkWindows(days, 7);
 }
 
 export function clockFromIso(iso: string): string {

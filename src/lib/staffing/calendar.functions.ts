@@ -15,7 +15,7 @@ import {
   PRACTICE_CALENDAR_NAME,
   type RawCalendarEvent,
 } from "./calendar-map";
-import { dayWindows } from "./dates";
+import { fetchWindows } from "./dates";
 import type { Appointment, CalendarInfo, RosterDay, VetId } from "./types";
 
 export type CalendarLoadResult =
@@ -97,7 +97,7 @@ export const loadPracticeCalendar = createServerFn({ method: "POST" })
         return { ok: false, errorMessage: "No calendars found on this Google account.", calendars };
       }
 
-      const windows = dayWindows(data.timeMin, data.timeMax);
+      const windows = fetchWindows(data.timeMin, data.timeMax);
       const searches = await Promise.all(
         windows.map((window) =>
           callTool(
@@ -152,34 +152,43 @@ export const loadPracticeCalendar = createServerFn({ method: "POST" })
 
 const PUBLIC_CALENDAR_KEY = "AIzaSyBNlYH01_9Hc5S1J9vuFmu2nUqBZJNAXxs";
 
+function finishPublic(events: RawCalendarEvent[]): CalendarLoadResult {
+  const mapped = mapPracticeEvents(events);
+  return {
+    ok: true,
+    calendars: [{ id: PRACTICE_CALENDAR_ID, name: PRACTICE_CALENDAR_NAME, primary: false }],
+    calendarId: PRACTICE_CALENDAR_ID,
+    calendarName: PRACTICE_CALENDAR_NAME,
+    appointments: mapped.appointments,
+    roster: mapped.roster,
+    skipped: mapped.skipped,
+    doctorOff: mapped.doctorOff,
+  };
+}
+
 async function loadPublicAppointments(
   timeMin: string,
   timeMax: string,
 ): Promise<CalendarLoadResult | null> {
   try {
-    const url = new URL(
-      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(PRACTICE_CALENDAR_ID)}/events`,
-    );
-    url.searchParams.set("singleEvents", "true");
-    url.searchParams.set("orderBy", "startTime");
-    url.searchParams.set("maxResults", "250");
-    url.searchParams.set("timeMin", timeMin);
-    url.searchParams.set("timeMax", timeMax);
-    url.searchParams.set("key", PUBLIC_CALENDAR_KEY);
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const json: unknown = await res.json();
-    const mapped = mapPracticeEvents(extractEventList(json));
-    return {
-      ok: true,
-      calendars: [{ id: PRACTICE_CALENDAR_ID, name: PRACTICE_CALENDAR_NAME, primary: false }],
-      calendarId: PRACTICE_CALENDAR_ID,
-      calendarName: PRACTICE_CALENDAR_NAME,
-      appointments: mapped.appointments,
-      roster: mapped.roster,
-      skipped: mapped.skipped,
-      doctorOff: mapped.doctorOff,
-    };
+    const windows = fetchWindows(timeMin, timeMax);
+    const events: RawCalendarEvent[] = [];
+    for (const window of windows) {
+      const url = new URL(
+        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(PRACTICE_CALENDAR_ID)}/events`,
+      );
+      url.searchParams.set("singleEvents", "true");
+      url.searchParams.set("orderBy", "startTime");
+      url.searchParams.set("maxResults", "250");
+      url.searchParams.set("timeMin", window.timeMin);
+      url.searchParams.set("timeMax", window.timeMax);
+      url.searchParams.set("key", PUBLIC_CALENDAR_KEY);
+      const res = await fetch(url);
+      if (!res.ok) return events.length ? finishPublic(events) : null;
+      const json: unknown = await res.json();
+      events.push(...extractEventList(json));
+    }
+    return finishPublic(events);
   } catch {
     return null;
   }

@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { APPOINTMENTS, DEMO_FOCUS_DATE, DOCTORS, DUTY_TEMPLATES, STAFF, WEEK_DATES } from "./seed";
-import { currentWeekDates, focusDate, rfcRangeForWeek } from "./dates";
+import { currentWeekDates, datesForSpan, focusDate, rfcRangeForWeek, shiftAnchor, skipSunday } from "./dates";
 import { PRACTICE_CALENDAR_ID } from "./calendar-map";
 import {
   fillUsualDay,
@@ -18,6 +18,7 @@ import type {
   AttendanceStatus,
   CalendarInfo,
   CalendarSource,
+  CalendarSpan,
   CoverId,
   DayPlan,
   DoctorTeam,
@@ -38,6 +39,7 @@ type StaffingState = {
   hydrated: boolean;
   selectedDate: string;
   view: ViewId;
+  calendarSpan: CalendarSpan;
   me: PersonId | null;
   weekDates: string[];
   appointments: Appointment[];
@@ -57,6 +59,9 @@ type StaffingState = {
   setHydrated: () => void;
   setDate: (date: string) => void;
   setView: (view: ViewId) => void;
+  setSpan: (span: CalendarSpan) => void;
+  shiftRange: (delta: number) => void;
+  goToday: () => void;
   setMe: (id: PersonId | null) => void;
   ctxFor: (date: string) => PlanContext;
   generate: (date?: string) => void;
@@ -119,10 +124,36 @@ function buildPlans(
   return plans;
 }
 
+function extrasOf(s: { staff: Person[]; doctors: DoctorTeam[]; duties: DutyTemplate[] }) {
+  return { staff: s.staff, doctors: s.doctors, duties: s.duties };
+}
+
+function applyRange(
+  s: StaffingState,
+  nextDate: string,
+  span: CalendarSpan,
+): Pick<StaffingState, "selectedDate" | "weekDates" | "plans" | "calendarSpan"> {
+  const selectedDate = skipSunday(nextDate, 1);
+  if (s.weekDates.includes(selectedDate) && span === s.calendarSpan) {
+    return { selectedDate, weekDates: s.weekDates, plans: s.plans, calendarSpan: span };
+  }
+  const weekDates = datesForSpan(span, selectedDate);
+  return {
+    selectedDate,
+    weekDates,
+    calendarSpan: span,
+    plans: {
+      ...s.plans,
+      ...buildPlans(weekDates, s.appointments, s.roster, s.plans, extrasOf(s)),
+    },
+  };
+}
+
 function seedState(): Pick<
   StaffingState,
   | "selectedDate"
   | "view"
+  | "calendarSpan"
   | "me"
   | "weekDates"
   | "appointments"
@@ -144,6 +175,7 @@ function seedState(): Pick<
   return {
     selectedDate: DEMO_FOCUS_DATE,
     view: "day",
+    calendarSpan: "week",
     me: null,
     weekDates: WEEK_DATES,
     appointments: APPOINTMENTS,
@@ -169,8 +201,23 @@ export const useStaffing = create<StaffingState>()(
       loginUrl: undefined,
       ...seedState(),
       setHydrated: () => set({ hydrated: true }),
-      setDate: (date) => set({ selectedDate: date }),
+      setDate: (date) => set((s) => applyRange(s, date, s.calendarSpan)),
       setView: (view) => set({ view }),
+      setSpan: (span) => set((s) => applyRange(s, s.selectedDate, span)),
+      shiftRange: (delta) =>
+        set((s) => {
+          const next = shiftAnchor(s.selectedDate, s.calendarSpan, delta);
+          const weekDates = datesForSpan(s.calendarSpan, next);
+          return {
+            selectedDate: skipSunday(next, 1),
+            weekDates,
+            plans: {
+              ...s.plans,
+              ...buildPlans(weekDates, s.appointments, s.roster, s.plans, extrasOf(s)),
+            },
+          };
+        }),
+      goToday: () => set((s) => applyRange(s, focusDate(), s.calendarSpan)),
       setMe: (id) => set({ me: id }),
       ctxFor: (date) => {
         const s = get();
@@ -484,11 +531,17 @@ export const useStaffing = create<StaffingState>()(
         });
       },
       applyGoogle: (payload) => {
-        const weekDates = currentWeekDates();
-        const selected = weekDates.includes(focusDate()) ? focusDate() : (weekDates[0] ?? focusDate());
+        const weekDates = get().weekDates.length ? get().weekDates : currentWeekDates();
+        const currentSelected = get().selectedDate;
+        const selected = weekDates.includes(currentSelected)
+          ? currentSelected
+          : weekDates.includes(focusDate())
+            ? focusDate()
+            : (weekDates[0] ?? focusDate());
         const previous = get().plans;
         const prior = get().appointments;
-        const appointments = payload.appointments.map((a) => {
+        const visible = new Set(weekDates);
+        const incoming = payload.appointments.map((a) => {
           const old =
             prior.find((p) => p.id === a.id) ??
             prior.find((p) => p.date === a.date && p.start === a.start && p.title === a.title);
@@ -504,7 +557,12 @@ export const useStaffing = create<StaffingState>()(
           }
           return next;
         });
-        const plans = buildPlans(weekDates, appointments, payload.roster, {}, {
+        const incomingIds = new Set(incoming.map((a) => a.id));
+        const appointments = [
+          ...prior.filter((p) => !incomingIds.has(p.id) && !visible.has(p.date)),
+          ...incoming,
+        ];
+        const plans = buildPlans(weekDates, appointments, payload.roster, previous, {
           staff: get().staff,
           doctors: get().doctors,
           duties: get().duties,
@@ -535,8 +593,7 @@ export const useStaffing = create<StaffingState>()(
           skipped: payload.skipped,
           weekDates,
           selectedDate: selected,
-          view: "day",
-          plans,
+          plans: { ...previous, ...plans },
         });
       },
       setCalendarUi: (patch) => set(patch),
@@ -548,6 +605,7 @@ export const useStaffing = create<StaffingState>()(
       partialize: (s) => ({
         selectedDate: s.selectedDate,
         view: s.view,
+        calendarSpan: s.calendarSpan,
         me: s.me,
         weekDates: s.weekDates,
         appointments: s.appointments,
@@ -576,7 +634,8 @@ export function coverageCounts(plan: DayPlan) {
 }
 
 export function weekRange(): { timeMin: string; timeMax: string } {
-  return rfcRangeForWeek(currentWeekDates());
+  const dates = useStaffing.getState().weekDates;
+  return rfcRangeForWeek(dates.length ? dates : currentWeekDates());
 }
 
 export function surgeryDates(plans: Record<string, DayPlan>, dates: string[]): string[] {

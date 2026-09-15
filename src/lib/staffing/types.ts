@@ -14,6 +14,7 @@ export type AttendanceStatus =
 export type DayStatus = "suggested" | "approved" | "locked";
 export type TaskState = "open" | "done" | "handed_off" | "blocked";
 export type ViewId = "week" | "day" | "team";
+export type CalendarSpan = "day" | "week" | "month";
 export type ServiceKind = "sports" | "surgery" | "field" | "tech";
 export type CalendarSource = "demo" | "google";
 export type DutyWhen = "during" | "eod";
