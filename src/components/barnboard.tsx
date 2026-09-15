@@ -24,7 +24,7 @@ async function pullCalendar(calendarId?: string) {
   const store = useStaffing.getState();
   store.setCalendarUi({
     calendarStatus: "loading",
-    calendarMessage: "Reading the Appointments calendar…",
+    calendarMessage: "Reading the Appointments calendar\u2026",
   });
   try {
     const range = weekRange();
@@ -39,7 +39,7 @@ async function pullCalendar(calendarId?: string) {
       if (!isFramed()) {
         store.setCalendarUi({
           calendarStatus: "error",
-          calendarMessage: "Showing this week’s board. Tap Load my calendar to pull Appointments.",
+          calendarMessage: "Showing this week\u2019s board. Tap Load my calendar to pull Appointments.",
           calendars: result.calendars ?? [],
         });
         return result;
@@ -75,7 +75,7 @@ async function pullCalendar(calendarId?: string) {
   } catch {
     store.setCalendarUi({
       calendarStatus: "error",
-      calendarMessage: "Could not reach Google Calendar. This week’s board is still usable.",
+      calendarMessage: "Could not reach Google Calendar. This week\u2019s board is still usable.",
     });
     return undefined;
   }
@@ -107,7 +107,7 @@ export function Barnboard() {
     if (waitStatus === "not_embedded") {
       useStaffing.getState().setCalendarUi({
         calendarStatus: "error",
-        calendarMessage: "Showing this week’s board. Tap Load my calendar to pull Appointments.",
+        calendarMessage: "Showing this week\u2019s board. Tap Load my calendar to pull Appointments.",
       });
     } else if (waitStatus === "timed_out") {
       useStaffing.getState().setCalendarUi({
@@ -167,7 +167,8 @@ export function Barnboard() {
 function WhoAmI() {
   const me = useStaffing((s) => s.me);
   const staff = useStaffing((s) => s.staff);
-  const boardScope = useStaffing((s) => s.boardScope);
+  const boardScope = (useStaffing((s) => (s as { boardScope?: "mine" | "all" }).boardScope) ?? "mine");
+  const setScope = useStaffing.getState() as { setBoardScope?: (scope: "mine" | "all") => void };
   const author = me === "alejandro";
   return (
     <div className="flex flex-col items-end gap-2">
@@ -178,7 +179,7 @@ function WhoAmI() {
           value={me ?? ""}
           onChange={(e) => useStaffing.getState().setMe((e.target.value || null) as PersonId | null)}
         >
-          <option value="">Choose…</option>
+          <option value="">Choose\u2026</option>
           {staff.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}
@@ -191,7 +192,7 @@ function WhoAmI() {
           <button
             type="button"
             className={`min-h-9 rounded-sm px-3 ${boardScope === "mine" ? "bg-surface-2 text-fg" : "text-muted"}`}
-            onClick={() => useStaffing.getState().setBoardScope("mine")}
+            onClick={() => setScope.setBoardScope?.("mine")}
           >
             My work
           </button>
@@ -199,7 +200,7 @@ function WhoAmI() {
             <button
               type="button"
               className={`min-h-9 rounded-sm px-3 ${boardScope === "all" ? "bg-surface-2 text-fg" : "text-muted"}`}
-              onClick={() => useStaffing.getState().setBoardScope("all")}
+              onClick={() => setScope.setBoardScope?.("all")}
             >
               Everyone
             </button>
