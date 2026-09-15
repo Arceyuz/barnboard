@@ -167,22 +167,46 @@ export function Barnboard() {
 function WhoAmI() {
   const me = useStaffing((s) => s.me);
   const staff = useStaffing((s) => s.staff);
+  const boardScope = useStaffing((s) => s.boardScope);
+  const author = me === "alejandro";
   return (
-    <label className="flex items-center gap-2 text-sm text-muted">
-      I am
-      <select
-        className="min-h-11 min-w-40 rounded-md border border-border bg-surface px-3 text-sm text-fg"
-        value={me ?? ""}
-        onChange={(e) => useStaffing.getState().setMe((e.target.value || null) as PersonId | null)}
-      >
-        <option value="">Choose…</option>
-        {staff.map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.name}
-          </option>
-        ))}
-      </select>
-    </label>
+    <div className="flex flex-col items-end gap-2">
+      <label className="flex items-center gap-2 text-sm text-muted">
+        I am
+        <select
+          className="min-h-11 min-w-40 rounded-md border border-border bg-surface px-3 text-sm text-fg"
+          value={me ?? ""}
+          onChange={(e) => useStaffing.getState().setMe((e.target.value || null) as PersonId | null)}
+        >
+          <option value="">Choose…</option>
+          {staff.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      {me && (
+        <div className="flex rounded-md border border-border bg-surface p-0.5 text-xs">
+          <button
+            type="button"
+            className={`min-h-9 rounded-sm px-3 ${boardScope === "mine" ? "bg-surface-2 text-fg" : "text-muted"}`}
+            onClick={() => useStaffing.getState().setBoardScope("mine")}
+          >
+            My work
+          </button>
+          {author && (
+            <button
+              type="button"
+              className={`min-h-9 rounded-sm px-3 ${boardScope === "all" ? "bg-surface-2 text-fg" : "text-muted"}`}
+              onClick={() => useStaffing.getState().setBoardScope("all")}
+            >
+              Everyone
+            </button>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -205,13 +229,13 @@ function CalendarBar() {
           {status === "loading" || status === "pending"
             ? "Connecting"
             : live
-              ? `Live · ${name}`
+              ? `Live \u00b7 ${name}`
               : "This week"}
         </Badge>
         {live && (
           <span className="text-xs text-muted">
             {count} stops
-            {skipped ? ` · ${skipped} office/admin skipped` : ""}
+            {skipped ? ` \u00b7 ${skipped} office/admin skipped` : ""}
           </span>
         )}
         {message && status !== "live" && <span className="text-xs text-muted">{message}</span>}
