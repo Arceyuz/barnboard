@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   displayTitle,
   extractCalendars,
+  isSurgeryTitle,
   mapPracticeEvents,
   parseRoster,
 } from "./calendar-map.ts";
@@ -30,6 +31,14 @@ describe("displayTitle", () => {
       displayTitle("✔️King- Gambler  +18638736167  trainer@example.com"),
       "King- Gambler",
     );
+  });
+});
+
+describe("surgery titles", () => {
+  it("treats kissing spine and standing sx as surgery, not consults", () => {
+    assert.equal(isSurgeryTitle("Serda- Jazzy 7 site kissing spine"), true);
+    assert.equal(isSurgeryTitle("Gore- Gally standing sx"), true);
+    assert.equal(isSurgeryTitle("Cantu-Mia stifle catching/sx consult"), false);
   });
 });
 
@@ -119,12 +128,13 @@ describe("mapPracticeEvents", () => {
     assert.deepEqual(mapped.roster, [
       { date: "2026-09-15", personIds: ["alejandro", "becca", "kaycee"] },
     ]);
+    assert.deepEqual(mapped.doctorOff, [{ date: "2026-09-16", vetId: "sidney" }]);
 
     const byId = Object.fromEntries(mapped.appointments.map((a) => [a.id, a]));
     assert.equal(byId.sidney?.vetId, "sidney");
     assert.equal(byId.weston?.vetId, "weston");
     assert.equal(byId.md?.vetId, "michaela");
-    assert.equal(byId.sx?.vetId, "unknown");
+    assert.equal(byId.sx?.vetId, "weston");
     assert.equal(byId.sx?.service, "surgery");
     assert.equal(byId.sidney?.notes, undefined);
     assert.ok(!JSON.stringify(mapped.appointments).includes("MEDICAL"));

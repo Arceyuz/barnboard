@@ -1,6 +1,7 @@
-export type PersonId = "alejandro" | "becca" | "kaycee" | "alice" | "kate";
+export type PersonId = string;
 export type VetId = "weston" | "sidney" | "michaela";
-export type Role = "primary" | "secondary" | "float" | "office";
+export type Role = "primary" | "secondary" | "float" | "office" | "oncall";
+export type TeamKind = VetId | "float" | "office" | "oncall";
 export type AttendanceStatus =
   | "expected"
   | "on_site"
@@ -11,9 +12,11 @@ export type AttendanceStatus =
   | "done";
 export type DayStatus = "suggested" | "approved" | "locked";
 export type TaskState = "open" | "done" | "handed_off" | "blocked";
-export type ViewId = "plan" | "board" | "week" | "roster";
+export type ViewId = "week" | "day" | "team";
 export type ServiceKind = "sports" | "surgery" | "field";
 export type CalendarSource = "demo" | "google";
+export type DutyWhen = "during" | "eod";
+export type DoctorWork = "not_set" | "off" | "working" | "sports" | "surgery";
 
 export type Person = {
   id: PersonId;
@@ -21,7 +24,29 @@ export type Person = {
   short: string;
   kind: "primary-tech" | "support-tech" | "office";
   workdays: number[];
+  onCallDays: number[];
+  usualTeam: TeamKind;
+  usualRole: Role;
+  surgery: boolean;
+  hoursPerWeek?: number;
   notes: string;
+};
+
+export type DoctorTeam = {
+  vetId: VetId;
+  name: string;
+  label: string;
+  truck: string;
+  needsTwo: boolean;
+};
+
+export type DutyTemplate = {
+  id: string;
+  label: string;
+  when: DutyWhen;
+  role?: Role;
+  personId?: PersonId;
+  surgeryOnly?: boolean;
 };
 
 export type Appointment = {
@@ -35,6 +60,7 @@ export type Appointment = {
   service: ServiceKind;
   colorLabel: string;
   notes?: string;
+  custom?: boolean;
 };
 
 export type Assignment = {
@@ -59,7 +85,9 @@ export type Task = {
   required: boolean;
   state: TaskState;
   blocker?: string;
-  vetId: VetId;
+  vetId: VetId | "office";
+  when: DutyWhen;
+  custom?: boolean;
 };
 
 export type Attendance = {
@@ -75,6 +103,10 @@ export type DayPlan = {
   warnings: Warning[];
   attendance: Attendance[];
   tasks: Task[];
+  doctorWork: Record<VetId, DoctorWork>;
+  officeId: PersonId | null;
+  onCallIds: PersonId[];
+  offIds: PersonId[];
 };
 
 export type CalendarInfo = {

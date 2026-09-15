@@ -107,6 +107,14 @@ function firstProvider(blob: string): VetId | "unknown" {
   return "michaela";
 }
 
+export function isSurgeryTitle(title: string, description = ""): boolean {
+  const blob = `${title} ${description}`;
+  if (/sx\s+consult|\bconsults?\b/i.test(title) && !/\bstanding sx\b|kissing spine|arthroscopy/i.test(blob)) {
+    return false;
+  }
+  return /\bstanding sx\b|\barthroscopy\b|kissing spine|\bsurgery\b|\bsx\b/i.test(blob);
+}
+
 function detectVet(title: string, description: string): VetId | "unknown" {
   const fromNotes = firstProvider(description);
   if (fromNotes !== "unknown") return fromNotes;
@@ -115,19 +123,19 @@ function detectVet(title: string, description: string): VetId | "unknown" {
   if (/^sc\b/i.test(title) || /\bsidney\b|\bchanutin\b/i.test(title)) return "sidney";
   if (/^wd\b/i.test(title) || /\bweston\b|\bdavis\b/i.test(title)) return "weston";
   if (/\bkj\/wd\b/i.test(title)) return "weston";
+  if (isSurgeryTitle(title, description)) return "weston";
   return "unknown";
 }
 
 function detectService(title: string, description: string, vet: VetId | "unknown"): ServiceKind {
-  const blob = `${title} ${description}`;
-  if (/\bstanding sx\b|\bsurgery\b|\bsx\b|kissing spine|arthroscopy/i.test(blob)) return "surgery";
+  if (isSurgeryTitle(title, description)) return "surgery";
   if (vet === "weston") return "sports";
   return "field";
 }
 
 function shouldSkipTitle(title: string): boolean {
   return (
-    /\b(to do|todo|eftps|payment|on call|gate code|card ending|sid off|show shift|calls\/paperwork)\b/i.test(
+    /\b(to do|todo|eftps|payment|on call|gate code|card ending|show shift|calls\/paperwork)\b/i.test(
       title,
     ) ||
     /\breview .{0,40}schedule\b/i.test(title) ||
@@ -137,6 +145,13 @@ function shouldSkipTitle(title: string): boolean {
     /\bgather\b.{0,40}\bsupplies\b/i.test(title) ||
     /^denmark\b/i.test(title)
   );
+}
+
+function doctorOffFromTitle(title: string): VetId | null {
+  if (/\bsid(?:ney)? off\b/i.test(title) || /\bchanutin off\b/i.test(title)) return "sidney";
+  if (/\bwd off\b|\bdavis off\b|\bweston off\b/i.test(title)) return "weston";
+  if (/\bmd off\b|\bdoole off\b/i.test(title)) return "michaela";
+  return null;
 }
 
 export function displayTitle(raw: string): string {
@@ -153,9 +168,11 @@ export function mapPracticeEvents(raw: RawCalendarEvent[]): {
   appointments: Appointment[];
   roster: RosterDay[];
   skipped: number;
+  doctorOff: Array<{ date: string; vetId: VetId }>;
 } {
   const appointments: Appointment[] = [];
   const rosterByDate = new Map<string, PersonId[]>();
+  const doctorOff: Array<{ date: string; vetId: VetId }> = [];
   const seen = new Set<string>();
   let skipped = 0;
 
@@ -180,6 +197,12 @@ export function mapPracticeEvents(raw: RawCalendarEvent[]): {
     const date = dateFromIso(start);
     const tStart = clockFromIso(start);
     const tEnd = clockFromIso(end || start);
+
+    const off = doctorOffFromTitle(title);
+    if (off) {
+      doctorOff.push({ date, vetId: off });
+      continue;
+    }
 
     if (isRosterEvent(title)) {
       const people = parseRoster(title);
@@ -233,5 +256,5 @@ export function mapPracticeEvents(raw: RawCalendarEvent[]): {
   }));
 
   appointments.sort((a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start));
-  return { appointments, roster, skipped };
+  return { appointments, roster, skipped, doctorOff };
 }

@@ -23,6 +23,11 @@
   --color-dot-surgery: #a45a52;
   --color-dot-sidney: #7a8a96;
   --color-dot-doole: #6e7c72;
+  --color-role-p: #6d7eb8;
+  --color-role-s: #c4a574;
+  --color-role-f: #8a7aa8;
+  --color-role-o: #6a7a72;
+  --color-role-c: #5f9e8e;
   --font-display: "Fraunces", ui-serif, Georgia, serif;
   --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
   --radius-xs: 4px;
@@ -51,6 +56,13 @@
 
   button:not(:disabled),
   [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  input[type="checkbox"] {
+    accent-color: var(--color-accent);
+    width: 1.1rem;
+    height: 1.1rem;
     cursor: pointer;
   }
 }

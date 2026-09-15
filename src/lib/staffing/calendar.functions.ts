@@ -16,7 +16,7 @@ import {
   type RawCalendarEvent,
 } from "./calendar-map";
 import { dayWindows } from "./dates";
-import type { Appointment, CalendarInfo, RosterDay } from "./types";
+import type { Appointment, CalendarInfo, RosterDay, VetId } from "./types";
 
 export type CalendarLoadResult =
   | {
@@ -28,6 +28,7 @@ export type CalendarLoadResult =
       appointments: Appointment[];
       roster: RosterDay[];
       skipped: number;
+      doctorOff: Array<{ date: string; vetId: VetId }>;
     }
   | {
       ok: false;
@@ -128,6 +129,7 @@ export const loadPracticeCalendar = createServerFn({ method: "POST" })
         appointments: mapped.appointments,
         roster: mapped.roster,
         skipped: mapped.skipped,
+        doctorOff: mapped.doctorOff,
       };
     } catch (error) {
       return {
