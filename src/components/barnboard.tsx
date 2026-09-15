@@ -39,7 +39,7 @@ async function pullCalendar(calendarId?: string) {
       if (!isFramed()) {
         store.setCalendarUi({
           calendarStatus: "error",
-          calendarMessage: "Showing this week’s board. Tap Load my calendar after Google is connected.",
+          calendarMessage: "Showing this week’s board. Tap Load my calendar to pull Appointments.",
           calendars: result.calendars ?? [],
         });
         return result;
@@ -108,7 +108,7 @@ export function Barnboard() {
     if (waitStatus === "not_embedded") {
       useStaffing.getState().setCalendarUi({
         calendarStatus: "error",
-        calendarMessage: "Showing this week’s board. Tap Load my calendar after Google is connected.",
+        calendarMessage: "Showing this week’s board. Tap Load my calendar to pull Appointments.",
       });
     } else if (waitStatus === "timed_out") {
       useStaffing.getState().setCalendarUi({

@@ -19,7 +19,7 @@ const ROLES: Role[] = ["primary", "secondary", "float", "office", "oncall"];
 const TEAMS: { id: TeamKind; label: string }[] = [
   { id: "weston", label: "Dr. Davis" },
   { id: "sidney", label: "Dr. Chanutin" },
-  { id: "michaela", label: "Dr. Doole" },
+  { id: "michaela", label: "Dr. Dooley" },
   { id: "float", label: "Float" },
   { id: "office", label: "Office" },
   { id: "oncall", label: "On call" },

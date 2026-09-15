@@ -1,3 +1,4 @@
+import { inferKit } from "./kit.ts";
 import { STAFF } from "./seed.ts";
 import { clockFromIso, dateFromIso, minutesBetween } from "./dates.ts";
 import type { Appointment, PersonId, RosterDay, ServiceKind, VetId } from "./types.ts";
@@ -119,7 +120,7 @@ function detectVet(title: string, description: string): VetId | "unknown" {
   const fromNotes = firstProvider(description);
   if (fromNotes !== "unknown") return fromNotes;
 
-  if (/^md\b|\bmd to\b/i.test(title) || /\bmichaela\b|\bdoole\b/i.test(title)) return "michaela";
+  if (/^md\b|\bmd to\b/i.test(title) || /\bmichaela\b|\bdoole(?:y)?\b/i.test(title)) return "michaela";
   if (/^sc\b/i.test(title) || /\bsidney\b|\bchanutin\b/i.test(title)) return "sidney";
   if (/^wd\b/i.test(title) || /\bweston\b|\bdavis\b/i.test(title)) return "weston";
   if (/\bkj\/wd\b/i.test(title)) return "weston";
@@ -150,7 +151,7 @@ function shouldSkipTitle(title: string): boolean {
 function doctorOffFromTitle(title: string): VetId | null {
   if (/\bsid(?:ney)? off\b/i.test(title) || /\bchanutin off\b/i.test(title)) return "sidney";
   if (/\bwd off\b|\bdavis off\b|\bweston off\b/i.test(title)) return "weston";
-  if (/\bmd off\b|\bdoole off\b/i.test(title)) return "michaela";
+  if (/\bmd off\b|\bdoole(?:y)? off\b/i.test(title)) return "michaela";
   return null;
 }
 
@@ -247,6 +248,7 @@ export function mapPracticeEvents(raw: RawCalendarEvent[]): {
       vetId,
       service,
       colorLabel: vetId === "unknown" ? "Needs review" : vetId,
+      kit: inferKit(title, description),
     });
   }
 

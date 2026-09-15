@@ -1,4 +1,5 @@
 import type { Appointment, DoctorTeam, DutyTemplate, Person, VetId } from "./types.ts";
+import { inferKit } from "./kit.ts";
 
 export const STAFF: Person[] = [
   {
@@ -67,13 +68,13 @@ export const STAFF: Person[] = [
 export const DOCTORS: DoctorTeam[] = [
   { vetId: "weston", name: "Weston Davis", label: "Dr. Davis", truck: "Dr. Davis's truck", needsTwo: true },
   { vetId: "sidney", name: "Sidney Chanutin", label: "Dr. Chanutin", truck: "Chanutin truck", needsTwo: false },
-  { vetId: "michaela", name: "Michaela Doole", label: "Dr. Doole", truck: "Dr. Doole's truck", needsTwo: false },
+  { vetId: "michaela", name: "Michaela Dooley", label: "Dr. Dooley", truck: "Dr. Dooley's truck", needsTwo: false },
 ];
 
 export const VETS: Record<VetId, { name: string; label: string }> = {
   weston: { name: "Weston Davis", label: "Dr. Davis" },
   sidney: { name: "Sidney Chanutin", label: "Dr. Chanutin" },
-  michaela: { name: "Michaela Doole", label: "Dr. Doole" },
+  michaela: { name: "Michaela Dooley", label: "Dr. Dooley" },
 };
 
 export const DUTY_TEMPLATES: DutyTemplate[] = [
@@ -109,7 +110,7 @@ export const WEEK_DATES = [
 
 export const DEMO_FOCUS_DATE = "2026-09-15";
 
-export const APPOINTMENTS: Appointment[] = [
+export const APPOINTMENTS: Appointment[] = ([
   {
     id: "m14-w1",
     date: "2026-09-14",
@@ -264,4 +265,4 @@ export const APPOINTMENTS: Appointment[] = [
     service: "sports",
     colorLabel: "Peacock",
   },
-];
+] as Appointment[]).map((a) => ({ ...a, kit: a.kit ?? inferKit(a.title) }));

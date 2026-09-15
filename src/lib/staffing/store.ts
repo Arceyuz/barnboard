@@ -12,6 +12,7 @@ import {
   type PlanContext,
 } from "./scheduler";
 import { makeDuties, mergeTasks } from "./duties";
+import { inferKit } from "./kit";
 import type {
   Appointment,
   AttendanceStatus,
@@ -68,6 +69,7 @@ type StaffingState = {
   setTask: (taskId: string, state: TaskState, blocker?: string) => void;
   addTask: (ownerId: PersonId, label: string, when: DutyWhen) => void;
   addAppointment: (input: { title: string; start: string; end: string; vetId: VetId }) => void;
+  updateKit: (id: string, kit: Appointment["kit"]) => void;
   setDoctorWork: (vetId: VetId, work: DoctorWork) => void;
   assignSuggested: (vetId: VetId) => void;
   tagAppointment: (id: string, vetId: VetId | "unknown") => void;
@@ -318,6 +320,7 @@ export const useStaffing = create<StaffingState>()(
           service: input.vetId === "weston" ? "sports" : "field",
           colorLabel: input.vetId,
           custom: true,
+          kit: inferKit(input.title.trim()),
         };
         const appointments = [...get().appointments, appt];
         set({
@@ -328,6 +331,12 @@ export const useStaffing = create<StaffingState>()(
             duties: get().duties,
           }),
         });
+      },
+      updateKit: (id, kit) => {
+        const appointments = get().appointments.map((a) =>
+          a.id === id ? { ...a, kit, kitCustom: true } : a,
+        );
+        set({ appointments });
       },
       setDoctorWork: (vetId, work) => {
         const s = get();
@@ -470,7 +479,15 @@ export const useStaffing = create<StaffingState>()(
         const weekDates = currentWeekDates();
         const selected = weekDates.includes(focusDate()) ? focusDate() : (weekDates[0] ?? focusDate());
         const previous = get().plans;
-        const plans = buildPlans(weekDates, payload.appointments, payload.roster, {}, {
+        const prior = get().appointments;
+        const appointments = payload.appointments.map((a) => {
+          const old =
+            prior.find((p) => p.id === a.id) ??
+            prior.find((p) => p.date === a.date && p.start === a.start && p.title === a.title);
+          if (old?.kitCustom) return { ...a, kit: old.kit, kitCustom: true };
+          return a;
+        });
+        const plans = buildPlans(weekDates, appointments, payload.roster, {}, {
           staff: get().staff,
           doctors: get().doctors,
           duties: get().duties,
@@ -496,7 +513,7 @@ export const useStaffing = create<StaffingState>()(
           calendarId: payload.calendarId,
           calendarName: payload.calendarName,
           calendars: payload.calendars,
-          appointments: payload.appointments,
+          appointments,
           roster: payload.roster,
           skipped: payload.skipped,
           weekDates,
@@ -509,7 +526,7 @@ export const useStaffing = create<StaffingState>()(
       resetDemo: () => set({ ...seedState(), calendars: get().calendars, me: get().me }),
     }),
     {
-      name: "barnboard-v5",
+      name: "barnboard-v6",
       skipHydration: true,
       partialize: (s) => ({
         selectedDate: s.selectedDate,

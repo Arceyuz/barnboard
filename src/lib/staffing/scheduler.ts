@@ -116,7 +116,7 @@ function inferDoctorWork(
 ): DoctorWork {
   if (explicit && explicit !== "not_set") return explicit;
   const mine = appts.filter((a) => a.vetId === vetId);
-  if (!mine.length) return explicit ?? "not_set";
+  if (!mine.length) return explicit && explicit !== "not_set" ? explicit : "off";
   if (mine.some((a) => a.service === "surgery")) return "surgery";
   if (vetId === "weston") return "sports";
   return "working";
@@ -312,14 +312,14 @@ export function planDay(
         warnings.push({
           id: `${date}-doole-follows`,
           severity: "info",
-          text: "Dr. Doole is with Sidney. She does not get a separate tech line.",
+          text: "Dr. Dooley is with Sidney. She does not get a separate tech line.",
         });
       }
     } else if (doole.length && weston.length) {
       warnings.push({
         id: `${date}-doole-weston`,
         severity: "info",
-        text: "Dr. Doole is following Weston. No extra tech assigned.",
+        text: "Dr. Dooley is following Weston. No extra tech assigned.",
       });
     }
 

@@ -77,7 +77,11 @@ export const loadPracticeCalendar = createServerFn({ method: "POST" })
         { max_results: 100 },
         opts,
       );
-      if (!listed.ok) return failFrom(listed);
+      if (!listed.ok) {
+        const pub = await loadPublicAppointments(data.timeMin, data.timeMax);
+        if (pub) return pub;
+        return failFrom(listed);
+      }
 
       const calendars = extractCalendars(listed.data);
       const preferred =
@@ -110,7 +114,11 @@ export const loadPracticeCalendar = createServerFn({ method: "POST" })
       );
 
       const failed = searches.find((s) => !s.ok);
-      if (failed) return failFrom(failed, calendars);
+      if (failed) {
+        const pub = await loadPublicAppointments(data.timeMin, data.timeMax);
+        if (pub) return pub;
+        return failFrom(failed, calendars);
+      }
 
       const events: RawCalendarEvent[] = [];
       for (const result of searches) {
@@ -132,6 +140,8 @@ export const loadPracticeCalendar = createServerFn({ method: "POST" })
         doctorOff: mapped.doctorOff,
       };
     } catch (error) {
+      const pub = await loadPublicAppointments(data.timeMin, data.timeMax);
+      if (pub) return pub;
       return {
         ok: false,
         errorMessage:
@@ -139,3 +149,38 @@ export const loadPracticeCalendar = createServerFn({ method: "POST" })
       };
     }
   });
+
+const PUBLIC_CALENDAR_KEY = "AIzaSyBNlYH01_9Hc5S1J9vuFmu2nUqBZJNAXxs";
+
+async function loadPublicAppointments(
+  timeMin: string,
+  timeMax: string,
+): Promise<CalendarLoadResult | null> {
+  try {
+    const url = new URL(
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(PRACTICE_CALENDAR_ID)}/events`,
+    );
+    url.searchParams.set("singleEvents", "true");
+    url.searchParams.set("orderBy", "startTime");
+    url.searchParams.set("maxResults", "250");
+    url.searchParams.set("timeMin", timeMin);
+    url.searchParams.set("timeMax", timeMax);
+    url.searchParams.set("key", PUBLIC_CALENDAR_KEY);
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const json: unknown = await res.json();
+    const mapped = mapPracticeEvents(extractEventList(json));
+    return {
+      ok: true,
+      calendars: [{ id: PRACTICE_CALENDAR_ID, name: PRACTICE_CALENDAR_NAME, primary: false }],
+      calendarId: PRACTICE_CALENDAR_ID,
+      calendarName: PRACTICE_CALENDAR_NAME,
+      appointments: mapped.appointments,
+      roster: mapped.roster,
+      skipped: mapped.skipped,
+      doctorOff: mapped.doctorOff,
+    };
+  } catch {
+    return null;
+  }
+}

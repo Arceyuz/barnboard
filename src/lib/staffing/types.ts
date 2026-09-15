@@ -18,6 +18,11 @@ export type CalendarSource = "demo" | "google";
 export type DutyWhen = "during" | "eod";
 export type DoctorWork = "not_set" | "off" | "working" | "sports" | "surgery";
 
+export type Kit = {
+  equipment: string[];
+  meds: string[];
+};
+
 export type Person = {
   id: PersonId;
   name: string;
@@ -61,6 +66,8 @@ export type Appointment = {
   colorLabel: string;
   notes?: string;
   custom?: boolean;
+  kit?: Kit;
+  kitCustom?: boolean;
 };
 
 export type Assignment = {

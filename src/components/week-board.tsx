@@ -202,7 +202,7 @@ function TeamCell({ date, vetId }: { date: string; vetId: VetId }) {
       )}
       {!asg?.primaryId && !asg?.secondaryId && <p className="text-muted">—</p>}
       <select
-        className="mt-1 min-h-11 w-full rounded-md border border-border bg-bg px-2 text-xs text-fg"
+        className="mt-1 hidden min-h-11 w-full rounded-sm border border-border bg-bg px-2 text-xs text-fg sm:block"
         value=""
         onChange={(e) => {
           const value = e.target.value;
