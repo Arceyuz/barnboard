@@ -1,13 +1,16 @@
 # Barnboard
 
-Staffing board for Dr. Weston Davis’s equine practice.
+**Open the app (tap this):** https://barnboard-wd.netlify.app
 
-This beta plans coverage, tracks the day-of board (late / no-show / call-out), and closes out end-of-day tasks. It can read the shared **Appointments** Google Calendar. It never writes back, and it never shows medical notes, phone numbers, or card numbers.
+That is the working beta. This GitHub page is only the source code.
 
-## Open the app
+Staffing board for Dr. Weston Davis’s equine practice. It plans coverage, tracks the day-of board (late / no-show / call-out), and closes out end-of-day tasks. It can read the shared **Appointments** Google Calendar. It never writes back, and it never shows medical notes, phone numbers, or card numbers.
 
-- **Try it:** [barnboard-wd.netlify.app](https://barnboard-wd.netlify.app)
-- **Source:** [github.com/Arceyuz/barnboard](https://github.com/Arceyuz/barnboard)
+## Links
+
+- **App:** https://barnboard-wd.netlify.app
+- **Backup open link:** https://arceyuz.github.io/barnboard/
+- **Source:** https://github.com/Arceyuz/barnboard
 
 Live Google Calendar pairing works inside Grok. The public site still has the full demo week so you can tap through Plan, Day-of, Week, and Roster.
 
@@ -20,7 +23,8 @@ Live Google Calendar pairing works inside Grok. The public site still has the fu
 
 ## How to try it
 
-1. Tap **Tue 15**
-2. Tap **Approve plan**
-3. Open **Day-of** to mark late / call-out
-4. Tap **Load my calendar** (Grok) to pull this week from Appointments
+1. Open https://barnboard-wd.netlify.app
+2. Tap **Tue 15**
+3. Tap **Approve plan**
+4. Open **Day-of** to mark late / call-out
+5. Tap **Load my calendar** (Grok) to pull this week from Appointments
