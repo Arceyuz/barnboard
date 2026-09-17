@@ -85,11 +85,11 @@ export const VETS: Record<VetId, { name: string; label: string }> = {
 };
 
 export const DUTY_TEMPLATES: DutyTemplate[] = [
-  { id: "p-rads", label: "Radiographs and ultrasound", when: "during", role: "primary" },
-  { id: "p-equip", label: "Prepare specialized equipment", when: "during", role: "primary" },
-  { id: "p-coord", label: "Coordinate the medical workflow with the doctor", when: "during", role: "primary" },
+  { id: "p-block", label: "Blocks", when: "during", role: "primary" },
+  { id: "p-rads", label: "Take radiographs", when: "during", role: "primary" },
+  { id: "p-setup", label: "Set up this stop (Bring list)", when: "during", role: "primary" },
   { id: "s-jog", label: "Jog horses", when: "during", role: "secondary" },
-  { id: "s-hvms", label: "Enter invoices in HVMS after each appointment", when: "during", role: "secondary" },
+  { id: "s-hvms", label: "Bill the appointment in HVMS now", when: "during", role: "secondary" },
   { id: "s-dea", label: "Log controlled drugs in the Control Log", when: "during", role: "secondary" },
   { id: "s-xfer", label: "Transfer images", when: "eod", role: "secondary" },
   { id: "s-send", label: "Send images to clients (same day)", when: "eod", role: "secondary" },
@@ -103,6 +103,7 @@ export const DUTY_TEMPLATES: DutyTemplate[] = [
   { id: "a-sterile", label: "Sterile prep", when: "during", personId: "alejandro" },
   { id: "a-bio", label: "Sterile draw-up of biologics", when: "during", personId: "alejandro" },
   { id: "a-run", label: "Keep the day running smoothly", when: "during", personId: "alejandro" },
+  { id: "a-notes", label: "Add end-of-day notes", when: "eod", personId: "alejandro" },
   { id: "sx-pack", label: "Stage the surgery pack", when: "during", personId: "alejandro", surgeryOnly: true },
 ];
 
