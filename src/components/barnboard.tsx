@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from "react";
-import { CalendarDays, ClipboardList, RefreshCw, Users } from "lucide-react";
+import { CalendarDays, ClipboardList, Printer, RefreshCw, Users } from "lucide-react";
 import { redirectToLoginIfRequired } from "@/lib/app-data";
 import { isFramed } from "@/lib/app-data/login";
 import { useRefetchWhenConnectorReady } from "@/lib/app-data/use-connector-readiness";
@@ -12,19 +12,21 @@ import { Button } from "@/components/ui/button";
 import { DayBoard } from "@/components/day-board";
 import { WeekBoard } from "@/components/week-board";
 import { TeamSetup } from "@/components/team-setup";
+import { PrintHistory } from "@/components/print-history";
 import { cn } from "@/lib/utils";
 
 const VIEWS: { id: ViewId; label: string }[] = [
   { id: "week", label: "Week" },
   { id: "day", label: "Day" },
   { id: "team", label: "Team & duties" },
+  { id: "print", label: "Print history" },
 ];
 
 async function pullCalendar(calendarId?: string) {
   const store = useStaffing.getState();
   store.setCalendarUi({
     calendarStatus: "loading",
-    calendarMessage: "Reading the Appointments calendar\u2026",
+    calendarMessage: "Reading the Appointments calendar…",
   });
   try {
     const range = weekRange();
@@ -39,7 +41,7 @@ async function pullCalendar(calendarId?: string) {
       if (!isFramed()) {
         store.setCalendarUi({
           calendarStatus: "error",
-          calendarMessage: "Showing this week\u2019s board. Tap Load my calendar to pull Appointments.",
+          calendarMessage: "Showing this week’s board. Tap Load my calendar to pull Appointments.",
           calendars: result.calendars ?? [],
         });
         return result;
@@ -75,7 +77,7 @@ async function pullCalendar(calendarId?: string) {
   } catch {
     store.setCalendarUi({
       calendarStatus: "error",
-      calendarMessage: "Could not reach Google Calendar. This week\u2019s board is still usable.",
+      calendarMessage: "Could not reach Google Calendar. This week’s board is still usable.",
     });
     return undefined;
   }
@@ -107,7 +109,7 @@ export function Barnboard() {
     if (waitStatus === "not_embedded") {
       useStaffing.getState().setCalendarUi({
         calendarStatus: "error",
-        calendarMessage: "Showing this week\u2019s board. Tap Load my calendar to pull Appointments.",
+        calendarMessage: "Showing this week’s board. Tap Load my calendar to pull Appointments.",
       });
     } else if (waitStatus === "timed_out") {
       useStaffing.getState().setCalendarUi({
@@ -149,6 +151,7 @@ export function Barnboard() {
               {v.id === "week" && <CalendarDays className="size-4" />}
               {v.id === "day" && <ClipboardList className="size-4" />}
               {v.id === "team" && <Users className="size-4" />}
+              {v.id === "print" && <Printer className="size-4" />}
               {v.label}
             </button>
           ))}
@@ -159,6 +162,7 @@ export function Barnboard() {
         {view === "week" && <WeekBoard />}
         {view === "day" && <DayBoard />}
         {view === "team" && <TeamSetup />}
+        {view === "print" && <PrintHistory />}
       </main>
     </div>
   );
@@ -167,47 +171,22 @@ export function Barnboard() {
 function WhoAmI() {
   const me = useStaffing((s) => s.me);
   const staff = useStaffing((s) => s.staff);
-  const boardScope = (useStaffing((s) => (s as { boardScope?: "mine" | "all" }).boardScope) ?? "mine");
-  const setScope = useStaffing.getState() as { setBoardScope?: (scope: "mine" | "all") => void };
-  const author = me === "alejandro";
   return (
-    <div className="flex flex-col items-end gap-2">
-      <label className="flex items-center gap-2 text-sm text-muted">
-        I am
-        <select
-          className="min-h-11 min-w-40 rounded-md border border-border bg-surface px-3 text-sm text-fg"
-          value={me ?? ""}
-          onChange={(e) => useStaffing.getState().setMe((e.target.value || null) as PersonId | null)}
-        >
-          <option value="">Choose\u2026</option>
-          {staff.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      {me && (
-        <div className="flex rounded-md border border-border bg-surface p-0.5 text-xs">
-          <button
-            type="button"
-            className={`min-h-9 rounded-sm px-3 ${boardScope === "mine" ? "bg-surface-2 text-fg" : "text-muted"}`}
-            onClick={() => setScope.setBoardScope?.("mine")}
-          >
-            My work
-          </button>
-          {author && (
-            <button
-              type="button"
-              className={`min-h-9 rounded-sm px-3 ${boardScope === "all" ? "bg-surface-2 text-fg" : "text-muted"}`}
-              onClick={() => setScope.setBoardScope?.("all")}
-            >
-              Everyone
-            </button>
-          )}
-        </div>
-      )}
-    </div>
+    <label className="flex items-center gap-2 text-sm text-muted">
+      I am
+      <select
+        className="min-h-11 min-w-40 rounded-md border border-border bg-surface px-3 text-sm text-fg"
+        value={me ?? ""}
+        onChange={(e) => useStaffing.getState().setMe((e.target.value || null) as PersonId | null)}
+      >
+        <option value="">Choose…</option>
+        {staff.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.name}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 
@@ -230,13 +209,13 @@ function CalendarBar() {
           {status === "loading" || status === "pending"
             ? "Connecting"
             : live
-              ? `Live \u00b7 ${name}`
+              ? `Live · ${name}`
               : "This week"}
         </Badge>
         {live && (
           <span className="text-xs text-muted">
             {count} stops
-            {skipped ? ` \u00b7 ${skipped} office/admin skipped` : ""}
+            {skipped ? ` · ${skipped} office/admin skipped` : ""}
           </span>
         )}
         {message && status !== "live" && <span className="text-xs text-muted">{message}</span>}
