@@ -2,7 +2,7 @@ import { PRACTICE_CALENDAR_ID, mapPracticeEvents, type RawCalendarEvent } from "
 import { useStaffing, weekRange } from "./store";
 
 export const TECH_CALENDAR_CLIENT_ID =
-  "1065328191178-uk9394ppp9kesio8114jt87vq39n7pcb.apps.googleusercontent.com";
+  "1065328191178-pkfe03v77njrmdchd05i8hv5vtth53cj.apps.googleusercontent.com";
 
 declare global {
   interface Window {
@@ -87,6 +87,10 @@ export async function signInForColors(): Promise<string> {
     skipped: mapped.skipped,
     doctorOff: mapped.doctorOff,
   });
-  const colored = mapped.appointments.filter((a) => /peacock|flamingo|wisteria|banana|tomato|lavender/i.test(a.colorLabel)).length;
-  return colored ? `Colors on ${colored} stops` : "Signed in. If stops are still gray, add your Gmail as a test user on the OAuth consent screen.";
+  const colored = mapped.appointments.filter((a) =>
+    /peacock|flamingo|wisteria|banana|tomato|lavender/i.test(a.colorLabel),
+  ).length;
+  return colored
+    ? `Colors on ${colored} stops`
+    : "Signed in. If stops are still gray, add your Gmail as a test user on the OAuth consent screen.";
 }
