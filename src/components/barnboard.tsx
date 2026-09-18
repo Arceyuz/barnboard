@@ -27,7 +27,7 @@ async function pullCalendar(calendarId?: string) {
   const store = useStaffing.getState();
   store.setCalendarUi({
     calendarStatus: "loading",
-    calendarMessage: "Reading the Appointments calendar…",
+    calendarMessage: "Reading the Appointments calendar\u2026",
   });
   try {
     const range = weekRange();
@@ -42,7 +42,7 @@ async function pullCalendar(calendarId?: string) {
       if (!isFramed()) {
         store.setCalendarUi({
           calendarStatus: "error",
-          calendarMessage: "Showing this week’s board. Tap Load my calendar to pull Appointments.",
+          calendarMessage: "Showing this week\u2019s board. Tap Load my calendar to pull Appointments.",
           calendars: result.calendars ?? [],
         });
         return result;
@@ -78,7 +78,7 @@ async function pullCalendar(calendarId?: string) {
   } catch {
     store.setCalendarUi({
       calendarStatus: "error",
-      calendarMessage: "Could not reach Google Calendar. This week’s board is still usable.",
+      calendarMessage: "Could not reach Google Calendar. This week\u2019s board is still usable.",
     });
     return undefined;
   }
@@ -110,7 +110,7 @@ export function Barnboard() {
     if (waitStatus === "not_embedded") {
       useStaffing.getState().setCalendarUi({
         calendarStatus: "error",
-        calendarMessage: "Showing this week’s board. Tap Load my calendar to pull Appointments.",
+        calendarMessage: "Showing this week\u2019s board. Tap Load my calendar to pull Appointments.",
       });
     } else if (waitStatus === "timed_out") {
       useStaffing.getState().setCalendarUi({
@@ -142,7 +142,8 @@ export function Barnboard() {
           {VIEWS.map((v) => (
             <button
               key={v.id}
-              type="button"n              onClick={() => useStaffing.getState().setView(v.id)}
+              type="button"
+              onClick={() => useStaffing.getState().setView(v.id)}
               className={cn(
                 "flex min-h-11 flex-1 items-center justify-center gap-2 rounded-md text-sm",
                 view === v.id ? "bg-surface-2 text-fg" : "text-muted",
@@ -179,7 +180,7 @@ function WhoAmI() {
         value={me ?? ""}
         onChange={(e) => useStaffing.getState().setMe((e.target.value || null) as PersonId | null)}
       >
-        <option value="">Choose…</option>
+        <option value="">Choose\u2026</option>
         {staff.map((p) => (
           <option key={p.id} value={p.id}>
             {p.name}
@@ -210,13 +211,13 @@ function CalendarBar() {
           {status === "loading" || status === "pending"
             ? "Connecting"
             : live
-              ? `Live · ${name}`
+              ? `Live \u00b7 ${name}`
               : "This week"}
         </Badge>
         {live && (
           <span className="text-xs text-muted">
             {count} stops
-            {skipped ? ` · ${skipped} office/admin skipped` : ""}
+            {skipped ? ` \u00b7 ${skipped} office/admin skipped` : ""}
           </span>
         )}
         {message && status !== "live" && <span className="text-xs text-muted">{message}</span>}
@@ -230,7 +231,7 @@ function CalendarBar() {
             size="sm"
             variant="secondary"
             onClick={() => {
-              setColorNote("Signing in…");
+              setColorNote("Signing in\u2026");
               void signInForColors()
                 .then((msg) => setColorNote(msg))
                 .catch((err: Error) => setColorNote(err.message));
