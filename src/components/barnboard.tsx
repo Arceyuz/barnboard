@@ -126,7 +126,7 @@ export function Barnboard() {
         <div className="mx-auto flex max-w-5xl flex-wrap items-start justify-between gap-3">
           <div className="flex items-center gap-3">
             <span className="inline-flex size-9 items-center justify-center rounded-md bg-accent text-accent-fg">
-              <span className="block size-4 rotate-45 border-2 border-accent-fg" />
+              <CalendarDays className="size-5" />
             </span>
             <div>
               <h1 className="text-sm font-semibold tracking-[0.18em] uppercase text-fg">Barnboard</h1>
@@ -180,7 +180,7 @@ function WhoAmI() {
         value={me ?? ""}
         onChange={(e) => useStaffing.getState().setMe((e.target.value || null) as PersonId | null)}
       >
-        <option value="">Choose\u2026</option>
+        <option value="">Choose...</option>
         {staff.map((p) => (
           <option key={p.id} value={p.id}>
             {p.name}
