@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { CalendarDays, ClipboardList, Printer, RefreshCw, Users } from "lucide-react";
+import { CalendarClock, CalendarDays, ClipboardList, Printer, RefreshCw, Users } from "lucide-react";
 import { redirectToLoginIfRequired } from "@/lib/app-data";
 import { isFramed } from "@/lib/app-data/login";
 import { useRefetchWhenConnectorReady } from "@/lib/app-data/use-connector-readiness";
@@ -11,6 +11,7 @@ import type { PersonId, ViewId } from "@/lib/staffing/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DayBoard } from "@/components/day-board";
+import { DayCalendar } from "@/components/day-calendar";
 import { WeekBoard } from "@/components/week-board";
 import { TeamSetup } from "@/components/team-setup";
 import { PrintHistory } from "@/components/print-history";
@@ -19,6 +20,7 @@ import { cn } from "@/lib/utils";
 const VIEWS: { id: ViewId; label: string }[] = [
   { id: "week", label: "Week" },
   { id: "day", label: "Day" },
+  { id: "agenda", label: "Day calendar" },
   { id: "team", label: "Team & duties" },
   { id: "print", label: "Print history" },
 ];
@@ -145,12 +147,13 @@ export function Barnboard() {
               type="button"
               onClick={() => useStaffing.getState().setView(v.id)}
               className={cn(
-                "flex min-h-11 flex-1 items-center justify-center gap-2 rounded-md text-sm",
+                "flex min-h-11 flex-1 items-center justify-center gap-2 rounded-md px-2 text-sm",
                 view === v.id ? "bg-surface-2 text-fg" : "text-muted",
               )}
             >
               {v.id === "week" && <CalendarDays className="size-4" />}
               {v.id === "day" && <ClipboardList className="size-4" />}
+              {v.id === "agenda" && <CalendarClock className="size-4" />}
               {v.id === "team" && <Users className="size-4" />}
               {v.id === "print" && <Printer className="size-4" />}
               {v.label}
@@ -162,6 +165,7 @@ export function Barnboard() {
       <main className="mx-auto max-w-5xl px-4 py-6 sm:px-8">
         {view === "week" && <WeekBoard />}
         {view === "day" && <DayBoard />}
+        {view === "agenda" && <DayCalendar />}
         {view === "team" && <TeamSetup />}
         {view === "print" && <PrintHistory />}
       </main>
