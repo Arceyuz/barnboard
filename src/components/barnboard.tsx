@@ -1,10 +1,11 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { CalendarDays, ClipboardList, Printer, RefreshCw, Users } from "lucide-react";
 import { redirectToLoginIfRequired } from "@/lib/app-data";
 import { isFramed } from "@/lib/app-data/login";
 import { useRefetchWhenConnectorReady } from "@/lib/app-data/use-connector-readiness";
 import { loadPracticeCalendar } from "@/lib/staffing/calendar.functions";
 import { PRACTICE_CALENDAR_ID } from "@/lib/staffing/calendar-map";
+import { signInForColors } from "@/lib/staffing/google-colors";
 import { useStaffing, weekRange } from "@/lib/staffing/store";
 import type { PersonId, ViewId } from "@/lib/staffing/types";
 import { Badge } from "@/components/ui/badge";
@@ -137,12 +138,11 @@ export function Barnboard() {
         <div className="mx-auto mt-4 max-w-5xl">
           <CalendarBar />
         </div>
-        <nav className="mx-auto mt-4 flex max-w-5xl gap-1 rounded-lg bg-surface p-1">
+        <nav className="mx-auto mt-4 flex max-w-5xl flex-wrap gap-1 rounded-lg bg-surface p-1">
           {VIEWS.map((v) => (
             <button
               key={v.id}
-              type="button"
-              onClick={() => useStaffing.getState().setView(v.id)}
+              type="button"n              onClick={() => useStaffing.getState().setView(v.id)}
               className={cn(
                 "flex min-h-11 flex-1 items-center justify-center gap-2 rounded-md text-sm",
                 view === v.id ? "bg-surface-2 text-fg" : "text-muted",
@@ -201,6 +201,7 @@ function CalendarBar() {
   const loginUrl = useStaffing((s) => s.loginUrl);
   const count = useStaffing((s) => s.appointments.length);
   const live = source === "google" && status === "live";
+  const [colorNote, setColorNote] = useState("");
 
   return (
     <div className="rounded-lg border border-border bg-surface px-3 py-3">
@@ -228,6 +229,18 @@ function CalendarBar() {
           <Button
             size="sm"
             variant="secondary"
+            onClick={() => {
+              setColorNote("Signing in…");
+              void signInForColors()
+                .then((msg) => setColorNote(msg))
+                .catch((err: Error) => setColorNote(err.message));
+            }}
+          >
+            Colors
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
             onClick={() => void pullCalendar()}
             disabled={status === "loading" || status === "pending"}
           >
@@ -236,6 +249,7 @@ function CalendarBar() {
           </Button>
         </div>
       </div>
+      {colorNote && <p className="mt-2 text-xs text-muted">{colorNote}</p>}
       {calendars.length > 1 && (
         <label className="mt-2 block text-xs text-muted">
           Calendar
